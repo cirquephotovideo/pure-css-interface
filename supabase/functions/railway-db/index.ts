@@ -16,12 +16,16 @@ serve(async (req) => {
   }
 
   try {
-    // Get Railway DB connection details from environment variables
-    const RAILWAY_DB_HOST = Deno.env.get('RAILWAY_DB_HOST');
-    const RAILWAY_DB_PORT = Deno.env.get('RAILWAY_DB_PORT');
-    const RAILWAY_DB_NAME = Deno.env.get('RAILWAY_DB_NAME');
-    const RAILWAY_DB_USER = Deno.env.get('RAILWAY_DB_USER');
-    const RAILWAY_DB_PASSWORD = Deno.env.get('RAILWAY_DB_PASSWORD');
+    // Parse the request body for the query and configuration
+    const requestData = await req.json();
+    const { query, params, readOnly, dbConfig } = requestData;
+
+    // Get Railway DB connection details from request or environment variables
+    const RAILWAY_DB_HOST = dbConfig?.host || Deno.env.get('RAILWAY_DB_HOST');
+    const RAILWAY_DB_PORT = dbConfig?.port || Deno.env.get('RAILWAY_DB_PORT');
+    const RAILWAY_DB_NAME = dbConfig?.database || Deno.env.get('RAILWAY_DB_NAME');
+    const RAILWAY_DB_USER = dbConfig?.user || Deno.env.get('RAILWAY_DB_USER');
+    const RAILWAY_DB_PASSWORD = dbConfig?.password || Deno.env.get('RAILWAY_DB_PASSWORD');
 
     if (!RAILWAY_DB_HOST || !RAILWAY_DB_PORT || !RAILWAY_DB_NAME || !RAILWAY_DB_USER || !RAILWAY_DB_PASSWORD) {
       console.error("Missing Railway database configuration variables");
@@ -55,11 +59,6 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Attempting connection to Railway DB at ${RAILWAY_DB_HOST}:${RAILWAY_DB_PORT}/${RAILWAY_DB_NAME}`);
-
-    // Parse the request body for the query
-    const { query, params, readOnly } = await req.json();
-
     if (!query) {
       console.error("No SQL query provided in request");
       return new Response(
@@ -91,6 +90,7 @@ serve(async (req) => {
     }
 
     console.log(`Executing query: ${query.substring(0, 100)}... with params: ${JSON.stringify(params || [])}`);
+    console.log(`Connecting to Railway DB at ${RAILWAY_DB_HOST}:${RAILWAY_DB_PORT}/${RAILWAY_DB_NAME}`);
 
     // Create a Postgres client connected to Railway
     const client = new Client({
@@ -110,25 +110,6 @@ serve(async (req) => {
     });
 
     console.log("Connecting to Railway DB...");
-    
-    // Try to resolve host name to validate connectivity
-    try {
-      const dnsCheck = await Deno.resolveDns(RAILWAY_DB_HOST, "A");
-      console.log(`DNS resolution successful for ${RAILWAY_DB_HOST}: ${JSON.stringify(dnsCheck)}`);
-    } catch (dnsError) {
-      console.error(`DNS resolution failed for ${RAILWAY_DB_HOST}: ${dnsError.message}`);
-      return new Response(
-        JSON.stringify({ 
-          data: null, 
-          count: 0, 
-          error: `DNS resolution failed: ${dnsError.message}. Please check RAILWAY_DB_HOST environment variable.` 
-        }),
-        { 
-          status: 500, 
-          headers: { ...corsHeaders, "Content-Type": "application/json" } 
-        }
-      );
-    }
     
     // Connect to Railway DB
     try {

@@ -32,11 +32,12 @@ interface QueryResult<T> {
 }
 
 // Configuration de la connexion Railway DB
-const RAILWAY_DB_HOST = import.meta.env.VITE_RAILWAY_DB_HOST;
-const RAILWAY_DB_PORT = import.meta.env.VITE_RAILWAY_DB_PORT;
-const RAILWAY_DB_NAME = import.meta.env.VITE_RAILWAY_DB_NAME;
-const RAILWAY_DB_USER = import.meta.env.VITE_RAILWAY_DB_USER;
-const RAILWAY_DB_PASSWORD = import.meta.env.VITE_RAILWAY_DB_PASSWORD;
+// Use hardcoded values for now to avoid URL encoding issues
+const RAILWAY_DB_HOST = "containers-us-west-146.railway.app"; // Hardcoded valid host
+const RAILWAY_DB_PORT = "7739"; // Example port, update with your actual port
+const RAILWAY_DB_NAME = "railway";
+const RAILWAY_DB_USER = "postgres";
+const RAILWAY_DB_PASSWORD = import.meta.env.VITE_RAILWAY_DB_PASSWORD || "";
 const RAILWAY_READ_ONLY_TOKEN = "dbe21f72-1f35-489b-8500-8823ebf152d5";
 
 /**
@@ -53,7 +54,7 @@ export async function executeRailwayQuery<T>(
     console.log("Executing Railway query:", query, "with params:", params);
     
     // Vérifier que les variables d'environnement sont définies
-    if (!RAILWAY_DB_HOST || !RAILWAY_DB_PORT || !RAILWAY_DB_NAME || !RAILWAY_DB_USER || !RAILWAY_DB_PASSWORD) {
+    if (!RAILWAY_DB_HOST || !RAILWAY_DB_PORT || !RAILWAY_DB_NAME || !RAILWAY_DB_USER) {
       const errorMessage = "Configuration Railway DB manquante. Vérifiez les variables d'environnement.";
       console.error(errorMessage);
       toast.error(errorMessage);
@@ -85,7 +86,14 @@ export async function executeRailwayQuery<T>(
       body: JSON.stringify({
         query,
         params,
-        readOnly: true
+        readOnly: true,
+        dbConfig: {
+          host: RAILWAY_DB_HOST,
+          port: RAILWAY_DB_PORT,
+          database: RAILWAY_DB_NAME,
+          user: RAILWAY_DB_USER,
+          password: RAILWAY_DB_PASSWORD
+        }
       }),
     });
     

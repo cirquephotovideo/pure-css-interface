@@ -11,7 +11,7 @@ const Index = () => {
   const [searchQuery, setSearchQuery] = useState('');
   
   // Fetch products based on search query or get all products
-  const { data: productsData, isLoading, error, isError } = useQuery({
+  const { data: productsData, isLoading, error, isError, refetch } = useQuery({
     queryKey: ['products', searchQuery],
     queryFn: () => {
       console.log("Fetching products with search query:", searchQuery);
@@ -20,7 +20,7 @@ const Index = () => {
         : fetchProducts();
     },
     staleTime: 60 * 1000, // 1 minute
-    retry: 2, // Retry twice to account for possible network issues
+    retry: 1, // Reduce retries to avoid flooding with errors
     retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 30000), // Exponential backoff
   });
 
@@ -46,6 +46,11 @@ const Index = () => {
   const handleSearch = (query: string) => {
     console.log("Search query:", query);
     setSearchQuery(query);
+  };
+
+  const handleRetry = () => {
+    toast.info("Tentative de reconnexion à la base de données...");
+    refetch();
   };
 
   return (
@@ -91,9 +96,15 @@ const Index = () => {
                   <p className="text-red-500 font-medium">Erreur de connexion à la base de données</p>
                   <p className="text-sm text-red-400 mt-2">
                     {errorMessage.includes("Connection failed") || errorMessage.includes("DNS") ? 
-                      "Vérifiez la configuration de Railway et les variables d'environnement." : 
+                      "Problème de connexion avec la base de données Railway." : 
                       "Veuillez réessayer plus tard ou contacter le support technique."}
                   </p>
+                  <button 
+                    onClick={handleRetry}
+                    className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+                  >
+                    Réessayer
+                  </button>
                   <details className="mt-4 text-left">
                     <summary className="cursor-pointer text-xs text-red-400">Détails techniques</summary>
                     <p className="mt-2 text-xs font-mono bg-red-100/50 p-2 rounded">{errorMessage}</p>
@@ -103,7 +114,9 @@ const Index = () => {
                 <ProductDisplay products={products} />
               ) : (
                 <div className="text-center p-8 opacity-70">
-                  Aucun produit trouvé. Essayez une autre recherche.
+                  {searchQuery ? 
+                    `Aucun produit trouvé pour "${searchQuery}". Essayez une autre recherche.` : 
+                    "Aucun produit disponible. Vérifiez la connexion à la base de données."}
                 </div>
               )}
             </div>
@@ -115,7 +128,7 @@ const Index = () => {
             {new Date().toLocaleDateString('fr-FR')}, {new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
           </div>
           <div>
-            {products.length} produit(s)
+            {products.length} produit(s) {searchQuery ? `pour "${searchQuery}"` : ""}
           </div>
         </footer>
       </main>
