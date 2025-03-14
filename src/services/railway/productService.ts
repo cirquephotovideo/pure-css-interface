@@ -1,23 +1,17 @@
 
 /**
- * Railway DB Product Service
- * Handles product-related database operations
+ * Product service for Railway DB access
  */
-import { toast } from "sonner";
-import { Product, QueryResult } from "./types";
 import { executeRailwayQuery } from "./queryService";
-import { LogLevel, logMessage, addToLogBuffer } from "./logger";
+import { Product, ProductQueryResult } from "./types";
+import { LogLevel, addToLogBuffer } from "./logger";
 
 /**
  * Fetch all products from the database
+ * @returns Promise with product data
  */
-export async function fetchProducts(): Promise<QueryResult<Product>> {
+export async function fetchProducts(): Promise<ProductQueryResult> {
   try {
-    logMessage(LogLevel.INFO, "Fetching all products");
-    addToLogBuffer(LogLevel.INFO, "Récupération de tous les produits");
-    
-    // Construct a query to fetch products from multiple tables
-    // with a unified schema for each result
     const query = `
       SELECT 
         NULL AS id, 
@@ -37,319 +31,278 @@ export async function fetchProducts(): Promise<QueryResult<Product>> {
     `;
     
     const result = await executeRailwayQuery<Product>(query);
-    
-    if (result.error) {
-      logMessage(LogLevel.ERROR, "Error fetching products", { error: result.error });
-      addToLogBuffer(LogLevel.ERROR, `Erreur de requête: ${result.error}`);
-      return result;
-    }
-    
-    logMessage(LogLevel.INFO, `Fetched ${result.data?.length || 0} products`);
-    addToLogBuffer(LogLevel.INFO, `${result.data?.length || 0} produits récupérés`);
-    
     return result;
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    logMessage(LogLevel.ERROR, "Exception fetching products", { error: errorMessage });
-    addToLogBuffer(LogLevel.ERROR, `Exception: ${errorMessage}`);
-    toast.error("Erreur lors de la récupération des produits");
-    
+    console.error("Error fetching products:", error);
     return {
-      data: [],
+      data: null,
       count: 0,
-      error: errorMessage
+      error: error instanceof Error ? error.message : "Unknown error"
     };
   }
-}
-
-// Interface for table configuration with column mapping
-interface TableConfig {
-  name: string;
-  enabled: boolean;
-  searchFields: string[];
-  displayFields: string[];
-  columnMapping?: Record<string, string>;
 }
 
 /**
- * Search for products by term
+ * Enhances a product with information from settings
  */
-export async function searchProducts(term: string): Promise<QueryResult<Product>> {
+function enhanceProductsWithSettings(products: Product[]): Product[] {
+  // Get table search configurations from localStorage if available
+  let tableConfigs: any[] = [];
+  
   try {
-    // Log the search operation
-    logMessage(LogLevel.INFO, `Recherche par terme: ${term}`);
+    const configsStr = localStorage.getItem('table_search_configs');
+    if (configsStr) {
+      tableConfigs = JSON.parse(configsStr);
+    }
+  } catch (e) {
+    console.error("Error parsing table configs:", e);
+  }
+  
+  // If no configs, return original products
+  if (!tableConfigs || tableConfigs.length === 0) {
+    return products;
+  }
+  
+  // Enhance products with column mappings if available
+  return products.map(product => {
+    // Find config for this product's source table
+    const tableConfig = tableConfigs.find(config => 
+      config.name === product.source_table
+    );
     
-    // Get saved table configurations from localStorage
-    let tableConfigs: TableConfig[] = [];
+    // If no mapping for this table, return product as is
+    if (!tableConfig || !tableConfig.columnMapping) {
+      return product;
+    }
+    
+    // Clone product to avoid mutating the original
+    const enhancedProduct = { ...product };
+    
+    // Initialize prices array if it doesn't exist
+    if (!enhancedProduct.prices) {
+      enhancedProduct.prices = [];
+    }
+    
+    // Apply column mappings based on standardized fields
+    if (product.price && tableConfig.columnMapping.price) {
+      // Add price information to the prices array
+      enhancedProduct.prices.push({
+        value: product.price,
+        type: 'default',
+        currency: '€',
+        source: product.source_table
+      });
+    }
+    
+    return enhancedProduct;
+  });
+}
+
+/**
+ * Search products across multiple tables
+ * @param term Search term to look for
+ * @returns Promise with product data
+ */
+export async function searchProducts(term: string): Promise<ProductQueryResult> {
+  try {
+    // Check if the search term looks like an EAN/barcode (all digits)
+    const isEanSearch = /^\d+$/.test(term);
+    
+    // Get table search configurations from localStorage if available
+    let tableConfigs: any[] = [];
     try {
-      const savedConfigs = localStorage.getItem('railway_search_tables');
-      if (savedConfigs) {
-        tableConfigs = JSON.parse(savedConfigs);
-        logMessage(LogLevel.INFO, `Loaded ${tableConfigs.length} table configurations`);
-        addToLogBuffer(LogLevel.INFO, `Chargement de ${tableConfigs.length} configurations de tables`);
+      const configsStr = localStorage.getItem('table_search_configs');
+      if (configsStr) {
+        tableConfigs = JSON.parse(configsStr);
       }
-    } catch (error) {
-      logMessage(LogLevel.ERROR, "Error loading table configurations", { error });
-      addToLogBuffer(LogLevel.ERROR, "Erreur lors du chargement des configurations de tables");
+    } catch (e) {
+      console.error("Error parsing table configs:", e);
     }
     
-    // First, get all available tables for searching
-    const tablesQuery = `
-        SELECT table_name 
-        FROM information_schema.tables 
-        WHERE table_schema = 'public' 
-        AND (table_name LIKE 'raw_%' OR table_name = 'products')
-        ORDER BY table_name
+    // Filter to only use enabled tables
+    const enabledTables = tableConfigs.filter(config => config.enabled);
+    
+    // If no tables are enabled, use a default query for products
+    if (enabledTables.length === 0) {
+      addToLogBuffer(LogLevel.INFO, `Aucune table configurée pour la recherche. Utilisation de la table products par défaut.`);
+      
+      // Build query params for LIKE search
+      const params = isEanSearch 
+        ? [term] // Exact match for EAN codes
+        : [`%${term}%`, `%${term}%`, `%${term}%`, `%${term}%`, term]; // LIKE for text search
+      
+      const query = `
+        SELECT 
+          NULL AS id, 
+          "ART NUMBER" AS reference, 
+          NULL AS barcode, 
+          "DESIGNATION 1" AS description, 
+          "BRAND" AS brand, 
+          NULL AS supplier_code, 
+          "DESIGNATION 2" AS name, 
+          "PRICE" AS price, 
+          "STOCKCAP" AS stock, 
+          NULL AS location, 
+          "EAN CODE" AS ean, 
+          'products' AS source_table 
+        FROM "products" 
+        WHERE 
+          ${isEanSearch 
+            ? '"EAN CODE"::text = $1' 
+            : '"BRAND"::text ILIKE $1 OR "DESIGNATION 1"::text ILIKE $2 OR "DESIGNATION 2"::text ILIKE $3 OR "ART NUMBER"::text ILIKE $4 OR "EAN CODE"::text = $5'
+          }
+        LIMIT 20
       `;
-    
-    const tablesResult = await executeRailwayQuery<{table_name: string}>(tablesQuery);
-    
-    if (tablesResult.error) {
-      logMessage(LogLevel.ERROR, "Error fetching tables", { error: tablesResult.error });
-      addToLogBuffer(LogLevel.ERROR, `Erreur de requête des tables: ${tablesResult.error}`);
-      return {
-        data: [],
-        count: 0,
-        error: tablesResult.error
-      };
+      
+      const result = await executeRailwayQuery<Product>(query, params);
+      
+      if (result.data && !result.error) {
+        // Enhance products with column mappings
+        result.data = enhanceProductsWithSettings(result.data);
+      }
+      
+      return result;
     }
     
-    // Get a list of raw tables to search
-    const tables = tablesResult.data || [];
+    // We need to build queries for each enabled table
+    let results: Product[] = [];
     
-    // Filter tables by those enabled in configuration
-    const enabledTableNames = tableConfigs
-      .filter(config => config.enabled)
-      .map(config => config.name);
+    addToLogBuffer(LogLevel.INFO, `Recherche dans ${enabledTables.length} tables configurées`);
     
-    // Use enabled tables from config, or fall back to the first 5 tables if none are enabled
-    const selectedTables = enabledTableNames.length > 0
-      ? tables.filter(table => enabledTableNames.includes(table.table_name))
-      : tables.slice(0, 5);
-    
-    logMessage(LogLevel.INFO, `Using ${selectedTables.length} tables for search`, {
-      enabledTables: enabledTableNames,
-      availableTables: tables.map(t => t.table_name)
-    });
-    addToLogBuffer(LogLevel.INFO, `Utilisation de ${selectedTables.length} tables pour la recherche`);
-    
-    // Now for each table, get its columns to build a dynamic search query
-    const tableQueries = [];
-    
-    for (const table of selectedTables) {
-      // Find config for this table
-      const tableConfig = tableConfigs.find(config => config.name === table.table_name);
+    // Process each enabled table one by one to avoid complex UNION queries
+    for (const tableConfig of enabledTables) {
+      const { name: tableName, searchFields, columnMapping } = tableConfig;
       
-      const columnsQuery = `
-          SELECT column_name
-          FROM information_schema.columns
-          WHERE table_schema = 'public'
-          AND table_name = $1
-          ORDER BY ordinal_position
-        `;
-      
-      const columnsResult = await executeRailwayQuery<{column_name: string}>(
-        columnsQuery, 
-        [table.table_name]
-      );
-      
-      if (columnsResult.error) {
-        logMessage(LogLevel.ERROR, `Error fetching columns for ${table.table_name}`, 
-                  { error: columnsResult.error });
+      if (!searchFields || searchFields.length === 0) {
+        addToLogBuffer(LogLevel.WARN, `Table ${tableName} n'a pas de champs de recherche configurés`);
         continue;
       }
       
-      const columns = columnsResult.data || [];
+      addToLogBuffer(LogLevel.INFO, `Recherche dans la table ${tableName} sur ${searchFields.length} champs`);
       
-      // Log columns for debugging
-      logMessage(LogLevel.DEBUG, `Table ${table.table_name} has columns:`, {
-        columns: columns.map(c => c.column_name)
-      });
+      // Build the WHERE clause for this table
+      let whereConditions = [];
+      let queryParams = [];
+      let paramIndex = 1;
       
-      // Build a query part for this table
-      if (table.table_name === 'products') {
-        // Special case for the products table with broader pattern matching
-        tableQueries.push(`
-          SELECT 
-            NULL AS id, 
-            NULL AS reference, 
-            NULL AS barcode, 
-            NULL AS description, 
-            "BRAND" AS brand, 
-            NULL AS supplier_code, 
-            NULL AS name, 
-            "PRICE" AS price, 
-            "STOCKCAP" AS stock, 
-            NULL AS location, 
-            NULL AS ean, 
-            'products' AS source_table 
-          FROM "products" 
-          WHERE 
-            "BRAND"::text ILIKE $1 
-            OR "BRAND"::text ILIKE $2 
-            OR "BRAND"::text ILIKE $3
-            OR "BRAND"::text ILIKE $4
-            OR "BRAND"::text = $5
-        `);
-      } else {
-        // For other tables, use the configured search fields if available
-        const searchableColumns = tableConfig && tableConfig.searchFields && tableConfig.searchFields.length > 0
-          ? tableConfig.searchFields.map(field => `
-              ${field}::text ILIKE $1 
-              OR ${field}::text ILIKE $2
-              OR ${field}::text ILIKE $3
-              OR ${field}::text ILIKE $4
-              OR ${field}::text = $5
-            `)
-          : columns
-              .filter(c => ['id', 'brand', 'code_article', 'oemnr', 'articlenr', 
-                            'description_odr1', 'description', 'eannr', 'supplier_id'].includes(c.column_name.toLowerCase()))
-              .map(c => `
-                ${c.column_name}::text ILIKE $1 
-                OR ${c.column_name}::text ILIKE $2
-                OR ${c.column_name}::text ILIKE $3
-                OR ${c.column_name}::text ILIKE $4
-                OR ${c.column_name}::text = $5
-              `);
+      // For EAN/barcode search, try to find relevant fields
+      if (isEanSearch) {
+        // Look for barcode/ean related fields in the mapping or column names
+        const barcodeFields = searchFields.filter(field => 
+          field.toLowerCase().includes('ean') || 
+          field.toLowerCase().includes('barcode') || 
+          field.toLowerCase().includes('code_barre') ||
+          field.toLowerCase().includes('upc') ||
+          field.toLowerCase().includes('gtin')
+        );
         
-        if (searchableColumns.length > 0) {
-          // Map columns based on configuration
-          const columnMapping = tableConfig?.columnMapping || {};
-          
-          // Use column mapping from table config if available
-          if (tableConfig && tableConfig.columnMapping && Object.keys(tableConfig.columnMapping).length > 0) {
-            // Build select query using explicit column mapping
-            const selectFields = standardColumns.map((columnId) => {
-              const mappedColumn = columnMapping[columnId];
-              return mappedColumn 
-                ? `${mappedColumn} AS ${columnId}` 
-                : `NULL AS ${columnId}`;
-            }).join(', ');
-            
-            tableQueries.push(`
-              SELECT 
-                ${selectFields},
-                '${table.table_name}' AS source_table 
-              FROM "${table.table_name}" 
-              WHERE ${searchableColumns.join(' OR ')}
-              LIMIT 20
-            `);
-          } else {
-            // Fallback to automatic column detection if no mapping is defined
-            const hasId = columns.some(c => c.column_name.toLowerCase() === 'id');
-            const hasDescription = columns.some(c => c.column_name.toLowerCase() === 'description');
-            const hasBrand = columns.some(c => c.column_name.toLowerCase() === 'brand');
-            const hasArticleNr = columns.some(c => c.column_name.toLowerCase() === 'articlenr');
-            const hasEan = columns.some(c => c.column_name.toLowerCase() === 'eannr');
-            const hasPrice = columns.some(c => c.column_name.toLowerCase() === 'price');
-            const hasStock = columns.some(c => c.column_name.toLowerCase() === 'stock');
-            const hasLocation = columns.some(c => c.column_name.toLowerCase() === 'stock_location');
-            const hasOem = columns.some(c => c.column_name.toLowerCase() === 'oemnr');
-            const hasCodeArticle = columns.some(c => c.column_name.toLowerCase() === 'code_article');
-            const hasDescriptionOdr = columns.some(c => c.column_name.toLowerCase() === 'description_odr1');
-            
-            tableQueries.push(`
-              SELECT 
-                ${hasId ? 'id' : 'NULL'} AS id, 
-                ${hasArticleNr ? 'articlenr' : hasCodeArticle ? 'code_article' : 'NULL'} AS reference, 
-                ${hasEan ? 'eannr' : 'NULL'} AS barcode, 
-                ${hasDescription ? 'description' : hasDescriptionOdr ? 'description_odr1' : 'NULL'} AS description, 
-                ${hasBrand ? 'brand' : 'NULL'} AS brand, 
-                ${hasOem ? 'oemnr' : 'NULL'} AS supplier_code, 
-                ${hasDescription ? 'description' : 'NULL'} AS name, 
-                ${hasPrice ? 'price' : 'NULL'} AS price, 
-                ${hasStock ? 'stock' : 'NULL'} AS stock, 
-                ${hasLocation ? 'stock_location' : 'NULL'} AS location, 
-                ${hasEan ? 'eannr' : 'NULL'} AS ean, 
-                '${table.table_name}' AS source_table 
-              FROM "${table.table_name}" 
-              WHERE ${searchableColumns.join(' OR ')}
-              LIMIT 20
-            `);
-          }
+        if (barcodeFields.length > 0) {
+          barcodeFields.forEach(field => {
+            whereConditions.push(`"${field}"::text = $${paramIndex}`);
+            queryParams.push(term);
+            paramIndex++;
+          });
+        } else {
+          // If no specific barcode fields, search in all fields for exact match
+          searchFields.forEach(field => {
+            whereConditions.push(`"${field}"::text = $${paramIndex}`);
+            queryParams.push(term);
+            paramIndex++;
+          });
         }
+      } else {
+        // Regular text search
+        searchFields.forEach(field => {
+          whereConditions.push(`"${field}"::text ILIKE $${paramIndex}`);
+          queryParams.push(`%${term}%`);
+          paramIndex++;
+        });
+      }
+      
+      // Skip if no conditions built
+      if (whereConditions.length === 0) continue;
+      
+      // Figure out mappings for standard fields
+      const idField = columnMapping?.id || 'id';
+      const referenceField = columnMapping?.reference || null;
+      const barcodeField = columnMapping?.barcode || null;
+      const descriptionField = columnMapping?.description || null;
+      const brandField = columnMapping?.brand || null;
+      const supplierCodeField = columnMapping?.supplier_code || null;
+      const nameField = columnMapping?.name || null;
+      const priceField = columnMapping?.price || null;
+      const stockField = columnMapping?.stock || null;
+      const locationField = columnMapping?.location || null;
+      const eanField = columnMapping?.ean || null;
+      
+      // Build the SELECT clause with NULL for unmapped fields
+      const selectFields = `
+        ${idField ? `"${idField}"` : 'NULL'} AS id,
+        ${referenceField ? `"${referenceField}"` : 'NULL'} AS reference,
+        ${barcodeField ? `"${barcodeField}"` : 'NULL'} AS barcode,
+        ${descriptionField ? `"${descriptionField}"` : 'NULL'} AS description,
+        ${brandField ? `"${brandField}"` : 'NULL'} AS brand,
+        ${supplierCodeField ? `"${supplierCodeField}"` : 'NULL'} AS supplier_code,
+        ${nameField ? `"${nameField}"` : 'NULL'} AS name,
+        ${priceField ? `"${priceField}"` : 'NULL'} AS price,
+        ${stockField ? `"${stockField}"` : 'NULL'} AS stock,
+        ${locationField ? `"${locationField}"` : 'NULL'} AS location,
+        ${eanField ? `"${eanField}"` : 'NULL'} AS ean,
+        '${tableName}' AS source_table
+      `;
+      
+      // Build the final query
+      const query = `
+        SELECT ${selectFields}
+        FROM "${tableName}"
+        WHERE ${whereConditions.join(' OR ')}
+        LIMIT 20
+      `;
+      
+      try {
+        addToLogBuffer(LogLevel.INFO, `Exécution de la requête pour ${tableName}`);
+        
+        const result = await executeRailwayQuery<Product>(query, queryParams);
+        
+        if (result.error) {
+          addToLogBuffer(LogLevel.ERROR, `Erreur lors de la recherche dans ${tableName}: ${result.error}`);
+        } else if (result.data) {
+          addToLogBuffer(LogLevel.INFO, `${result.data.length} résultats trouvés dans ${tableName}`);
+          
+          // Add results to our array
+          results = [...results, ...result.data];
+        }
+      } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : String(err);
+        addToLogBuffer(LogLevel.ERROR, `Exception lors de la recherche dans ${tableName}: ${errorMsg}`);
       }
     }
     
-    if (tableQueries.length === 0) {
-      const errorMessage = "Aucune table valide pour la recherche n'a été trouvée";
-      logMessage(LogLevel.ERROR, errorMessage);
-      addToLogBuffer(LogLevel.ERROR, errorMessage);
-      toast.error(errorMessage);
-      
+    // If we have results, return them
+    if (results.length > 0) {
+      const enhancedResults = enhanceProductsWithSettings(results);
       return {
-        data: [],
-        count: 0,
-        error: errorMessage
+        data: enhancedResults,
+        count: enhancedResults.length,
+        error: null
       };
     }
     
-    // Join all table queries with UNION ALL
-    const fullQuery = tableQueries.join(' UNION ALL ') + ' LIMIT 100';
-    
-    logMessage(LogLevel.INFO, `Recherche de produits avec "${term}" dans ${tableQueries.length} tables`);
-    addToLogBuffer(LogLevel.INFO, `Recherche avec "${term}" dans ${tableQueries.length} tables`);
-    
-    // Create multiple variations of the search term for better matching
-    const wildcardTerm = `%${term.trim()}%`;                 // Standard wildcard search: %GITZO MAGNESIUM%
-    const wordsTerm = `%${term.trim().split(/\s+/).join('%')}%`;  // Word-based search: %GITZO%MAGNESIUM%
-    const exactTerm = term.trim();                          // Exact term: GITZO MAGNESIUM
-    const startTerm = `${term.trim()}%`;                    // Starts with: GITZO MAGNESIUM%
-    
-    // Log the patterns being used for searching
-    logMessage(LogLevel.DEBUG, "Search patterns:", {
-      wildcardTerm,
-      wordsTerm,
-      exactTerm,
-      startTerm
-    });
-    
-    addToLogBuffer(LogLevel.INFO, `Patterns de recherche: général, par mot, exact, et début`);
-    
-    // Execute the combined search query with multiple search patterns
-    const searchResult = await executeRailwayQuery<Product>(
-      fullQuery, 
-      [wildcardTerm, wordsTerm, startTerm, `%${term.trim().toLowerCase()}%`, exactTerm]
-    );
-    
-    if (searchResult.error) {
-      logMessage(LogLevel.ERROR, "Error searching products", { error: searchResult.error });
-      addToLogBuffer(LogLevel.ERROR, `Erreur de recherche: ${searchResult.error}`);
-      toast.error("Erreur lors de la recherche de produits");
-      
-      return searchResult;
-    }
-    
-    logMessage(LogLevel.INFO, `Found ${searchResult.data?.length || 0} products matching "${term}"`);
-    addToLogBuffer(LogLevel.INFO, `${searchResult.data?.length || 0} produits trouvés pour "${term}"`);
-    
-    return searchResult;
-    
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    logMessage(LogLevel.ERROR, "Exception searching products", { error: errorMessage });
-    addToLogBuffer(LogLevel.ERROR, `Exception lors de la recherche: ${errorMessage}`);
-    toast.error("Erreur lors de la recherche de produits");
-    
+    // No results found
+    addToLogBuffer(LogLevel.INFO, `Aucun résultat trouvé pour "${term}"`);
     return {
       data: [],
       count: 0,
-      error: errorMessage
+      error: null
+    };
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    console.error("Error searching products:", error);
+    addToLogBuffer(LogLevel.ERROR, `Erreur de recherche: ${errorMsg}`);
+    return {
+      data: null,
+      count: 0,
+      error: errorMsg
     };
   }
 }
-
-// Helper array of standard column IDs
-const standardColumns = [
-  'id', 
-  'reference', 
-  'barcode', 
-  'description', 
-  'brand', 
-  'supplier_code', 
-  'name', 
-  'price', 
-  'stock', 
-  'location', 
-  'ean'
-];

@@ -1,138 +1,126 @@
 
 import React, { useState } from 'react';
-import { Product } from '@/services/railway';
-import PricingTable from './pricing/PricingTable';
-import ProductInfo from './info/ProductInfo';
-import BrandDisplay from './info/BrandDisplay';
-import PriceInfoDialog from './PriceInfoDialog';
+import { 
+  TableRow, 
+  TableCell 
+} from "@/components/ui/table";
+import { Product } from '@/services/railway/types';
+import { Button } from '@/components/ui/button';
+import { Eye, ShoppingCart, Tag } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import ProductDetailDialog from './dialog/ProductDetailDialog';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Database, Layers, FileText, Eye } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 
 interface ProductRowProps {
-  productGroup: Product[];
-  onSelectTable?: (table: string) => void;
+  product: Product;
+  index: number;
+  showSimpleView?: boolean;
 }
 
-const ProductRow: React.FC<ProductRowProps> = ({ productGroup, onSelectTable }) => {
-  const [openInfoDialog, setOpenInfoDialog] = useState<string | null>(null);
-  const [activeTabIndex, setActiveTabIndex] = useState(0);
-  const [showDetailDialog, setShowDetailDialog] = useState(false);
+const ProductRow: React.FC<ProductRowProps> = ({ 
+  product, 
+  index,
+  showSimpleView = false
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  // Handle dialog open
+  const handleOpenDialog = () => {
+    setIsOpen(true);
+  };
+
+  // Extract price from product
+  const price = product.prices && product.prices.length > 0 
+    ? product.prices[0].value 
+    : product.price;
+
+  // Determine row background based on index
+  const getRowClass = () => {
+    if (index % 2 === 0) {
+      return "bg-white dark:bg-gray-800";
+    }
+    return "bg-gray-50 dark:bg-gray-850";
+  };
   
-  // If there's only one product in the group, show it directly
-  if (productGroup.length === 1) {
-    const product = productGroup[0];
-    const prices = product.prices || [];
-    
-    return (
-      <div className="ios-glass flex items-center gap-4 p-4 mb-4 animate-fade-in dark:bg-gray-800/70">
-        <PricingTable product={product} onOpenDialog={(priceType) => setOpenInfoDialog(priceType)} />
-        
-        {prices.map((price, index) => (
-          <PriceInfoDialog 
-            key={index}
-            product={product}
-            price={price}
-            isOpen={openInfoDialog === price.type}
-            onClose={() => setOpenInfoDialog(null)}
-          />
-        ))}
-        
-        <div className="w-10 flex-shrink-0 flex flex-col items-center gap-2">
-          <button 
-            onClick={() => setShowDetailDialog(true)} 
-            className="flex items-center justify-center w-7 h-7 text-blue-600 dark:text-blue-400 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-            title="Voir détails complets"
+  // Handle rendering different data formats
+  const formatData = (value: any) => {
+    if (value === undefined || value === null) return "—";
+    return String(value);
+  };
+
+  // Determine if this product has detailed information
+  const hasDetailedInfo = Boolean(
+    product.description || 
+    product.prices?.length > 0 || 
+    product.supplier_code ||
+    product.ean
+  );
+
+  return (
+    <>
+      <TableRow className={cn(
+        getRowClass(), 
+        "transition-colors hover:bg-gray-100 dark:hover:bg-gray-700",
+        isOpen && "bg-blue-50 dark:bg-blue-900/20"
+      )}>
+        {!showSimpleView && (
+          <TableCell className="font-medium">
+            {product.source_table && (
+              <Badge variant="outline" className="text-xs px-1 py-0">
+                {product.source_table.replace('raw_', '')}
+              </Badge>
+            )}
+          </TableCell>
+        )}
+        <TableCell className="font-medium">
+          {formatData(product.reference || product.id)}
+        </TableCell>
+        <TableCell>{formatData(product.name || product.description)}</TableCell>
+        <TableCell>{formatData(product.brand)}</TableCell>
+        <TableCell>
+          {price ? `${price} €` : "—"}
+        </TableCell>
+        {!showSimpleView && (
+          <TableCell>
+            <div className="flex items-center gap-1">
+              {formatData(product.stock)}
+              {product.stock && (
+                Number(product.stock) <= 0 ? (
+                  <Badge variant="destructive" className="text-xs">Rupture</Badge>
+                ) : Number(product.stock) < 5 ? (
+                  <Badge variant="yellow" className="text-xs">Faible</Badge>
+                ) : null
+              )}
+            </div>
+          </TableCell>
+        )}
+        {!showSimpleView && (
+          <TableCell>
+            {product.barcode || product.ean || "—"}
+          </TableCell>
+        )}
+        <TableCell className="text-right flex justify-end">
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-8 w-8 p-0 ml-2"
+            onClick={handleOpenDialog}
+            title="Voir détails"
           >
             <Eye className="h-4 w-4" />
-          </button>
-        </div>
-        
-        <ProductInfo product={product} />
-        <BrandDisplay 
-          product={product} 
-          onClick={() => product.source_table && onSelectTable?.(product.source_table)}
-        />
-        
-        <ProductDetailDialog 
+          </Button>
+        </TableCell>
+      </TableRow>
+      
+      {/* Product Detail Dialog */}
+      {isOpen && (
+        <ProductDetailDialog
           product={product}
-          isOpen={showDetailDialog}
-          onClose={() => setShowDetailDialog(false)}
+          isOpen={isOpen}
+          onOpenChange={setIsOpen}
         />
-      </div>
-    );
-  }
-  
-  // For multiple products in a group, show a tabbed interface
-  const activeProduct = productGroup[activeTabIndex];
-  const prices = activeProduct.prices || [];
-  
-  return (
-    <div className="ios-glass p-4 mb-4 animate-fade-in dark:bg-gray-800/70">
-      <div className="flex items-center gap-2 mb-4">
-        <Badge variant="outline" className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 text-xs px-2 py-0.5 flex items-center gap-1">
-          <Layers className="h-3 w-3" />
-          <span>{productGroup.length} fiches produit</span>
-        </Badge>
-        <Badge variant="outline" className="bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 text-xs px-2 py-0.5 flex items-center gap-1">
-          <FileText className="h-3 w-3 mr-1" />
-          <span>Même code: {activeProduct.barcode || activeProduct.ean || activeProduct.supplier_code}</span>
-        </Badge>
-      </div>
-      
-      <Tabs defaultValue="0" onValueChange={(value) => setActiveTabIndex(parseInt(value))}>
-        <TabsList className="mb-4 bg-gray-100 dark:bg-gray-700 p-1">
-          {productGroup.map((product, index) => (
-            <TabsTrigger 
-              key={index} 
-              value={index.toString()} 
-              className="flex items-center gap-1 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800"
-            >
-              <Database className="h-3 w-3" />
-              <span className="truncate max-w-[100px]">{product.source_table || 'products'}</span>
-            </TabsTrigger>
-          ))}
-        </TabsList>
-        
-        <TabsContent value={activeTabIndex.toString()} className="flex items-center gap-4">
-          <PricingTable product={activeProduct} onOpenDialog={(priceType) => setOpenInfoDialog(priceType)} />
-          
-          {prices.map((price, index) => (
-            <PriceInfoDialog 
-              key={index}
-              product={activeProduct}
-              price={price}
-              isOpen={openInfoDialog === price.type}
-              onClose={() => setOpenInfoDialog(null)}
-            />
-          ))}
-          
-          <div className="w-10 flex-shrink-0 flex flex-col items-center gap-2">
-            <button 
-              onClick={() => setShowDetailDialog(true)} 
-              className="flex items-center justify-center w-7 h-7 text-blue-600 dark:text-blue-400 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-              title="Voir détails complets"
-            >
-              <Eye className="h-4 w-4" />
-            </button>
-          </div>
-          
-          <ProductInfo product={activeProduct} />
-          <BrandDisplay 
-            product={activeProduct} 
-            onClick={() => activeProduct.source_table && onSelectTable?.(activeProduct.source_table)}
-          />
-        </TabsContent>
-      </Tabs>
-      
-      <ProductDetailDialog 
-        product={activeProduct}
-        isOpen={showDetailDialog}
-        onClose={() => setShowDetailDialog(false)}
-      />
-    </div>
+      )}
+    </>
   );
 };
 
