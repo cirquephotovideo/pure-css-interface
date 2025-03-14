@@ -1,4 +1,5 @@
-import { useState } from 'react'
+
+import { useState, useEffect } from 'react'
 import './App.css'
 import Sidebar from './components/Sidebar'
 import ProductDisplay from './components/product/ProductDisplay'
@@ -8,13 +9,20 @@ import { Toaster } from './components/ui/sonner'
 
 function App() {
   const [currentPage, setCurrentPage] = useState('products');
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  
+  useEffect(() => {
+    // Check if dark mode is enabled on mount
+    const darkModeEnabled = localStorage.getItem('darkMode') === 'true';
+    setIsDarkMode(darkModeEnabled);
+  }, []);
 
   const handleNavigation = (page: string) => {
     setCurrentPage(page);
   };
 
   return (
-    <div className="flex h-screen bg-gradient-to-br from-[#e0e8ff] to-[#f5e3ff] text-foreground">
+    <div className={`flex h-screen text-foreground ${isDarkMode ? 'dark' : ''}`} style={{ backgroundImage: 'var(--app-gradient)' }}>
       <Sidebar onNavigate={handleNavigation} activePage={currentPage} />
       
       <main className="flex-1 overflow-auto p-3">

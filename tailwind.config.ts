@@ -127,7 +127,9 @@ export default {
 			},
 			backgroundImage: {
 				'gradient-app': 'linear-gradient(135deg, #e0e8ff 0%, #f5e3ff 100%)',
-				'gradient-sidebar': 'linear-gradient(to bottom, #9b87f5, #7E69AB)'
+				'gradient-app-dark': 'linear-gradient(135deg, #1A1F2C 0%, #2D2A3C 100%)',
+				'gradient-sidebar': 'linear-gradient(to bottom, #9b87f5, #7E69AB)',
+				'gradient-sidebar-dark': 'linear-gradient(to bottom, #6E59A5, #4A3F71)'
 			}
 		}
 	},
