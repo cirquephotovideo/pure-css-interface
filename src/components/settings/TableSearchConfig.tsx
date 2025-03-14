@@ -294,6 +294,157 @@ const TableSearchConfig: React.FC<TableSearchConfigProps> = ({
     };
   };
   
+  const renderFieldsTab = () => {
+    if (!selectedTable || !tableColumns[selectedTable]) return null;
+    
+    return (
+      <div className="space-y-4">
+        <div>
+          <div className="flex justify-between items-center mb-2">
+            <h3 className="text-sm font-medium">Champs de recherche</h3>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => selectAllFields(selectedTable, 'searchFields')}
+              >
+                Tout sélectionner
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => clearAllFields(selectedTable, 'searchFields')}
+              >
+                Tout désélectionner
+              </Button>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+            {tableColumns[selectedTable].map(column => (
+              <div key={`search-${column}`} className="flex items-center space-x-2">
+                <Checkbox 
+                  id={`search-${column}`} 
+                  checked={getSelectedTableConfig().searchFields.includes(column)}
+                  onCheckedChange={() => toggleField(selectedTable, column, 'searchFields')}
+                />
+                <label
+                  htmlFor={`search-${column}`}
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  {column}
+                </label>
+              </div>
+            ))}
+          </div>
+        </div>
+        
+        <Separator />
+        
+        <div>
+          <div className="flex justify-between items-center mb-2">
+            <h3 className="text-sm font-medium">Champs d'affichage</h3>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => selectAllFields(selectedTable, 'displayFields')}
+              >
+                Tout sélectionner
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => clearAllFields(selectedTable, 'displayFields')}
+              >
+                Tout désélectionner
+              </Button>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+            {tableColumns[selectedTable].map(column => (
+              <div key={`display-${column}`} className="flex items-center space-x-2">
+                <Checkbox 
+                  id={`display-${column}`} 
+                  checked={getSelectedTableConfig().displayFields.includes(column)}
+                  onCheckedChange={() => toggleField(selectedTable, column, 'displayFields')}
+                />
+                <label
+                  htmlFor={`display-${column}`}
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  {column}
+                </label>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  };
+  
+  const renderMappingTab = () => {
+    if (!selectedTable || !tableColumns[selectedTable]) return null;
+    
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-sm font-medium">Correspondance des colonnes</h3>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => autoMapColumns(selectedTable)}
+            >
+              Auto-mapping
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => clearColumnMappings(selectedTable)}
+            >
+              Effacer tout
+            </Button>
+          </div>
+        </div>
+        
+        <div className="text-sm text-muted-foreground mb-4">
+          Spécifiez comment les champs de cette table correspondent aux champs standards. 
+          Exemple: si la colonne pour la marque s'appelle "brand_name", associez-la à "brand".
+        </div>
+        
+        <div className="space-y-4">
+          {standardColumns.map(({ id, label }) => {
+            const tableConfig = getSelectedTableConfig();
+            const currentMapping = tableConfig.columnMapping?.[id] || '';
+            
+            return (
+              <div key={id} className="grid grid-cols-12 gap-4 items-center">
+                <Label htmlFor={`map-${id}`} className="col-span-3">
+                  {label} ({id})
+                </Label>
+                <div className="col-span-9">
+                  <select
+                    id={`map-${id}`}
+                    className="w-full rounded-md border border-input bg-background px-3 py-2"
+                    value={currentMapping}
+                    onChange={(e) => updateColumnMapping(selectedTable, id, e.target.value)}
+                  >
+                    <option value="">-- Sélectionner une colonne --</option>
+                    {tableColumns[selectedTable].map(column => (
+                      <option key={column} value={column}>
+                        {column}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+  
   return (
     <div className="space-y-6">
       <Card>
@@ -394,151 +545,15 @@ const TableSearchConfig: React.FC<TableSearchConfigProps> = ({
                 <Skeleton className="h-4 w-3/4" />
                 <Skeleton className="h-4 w-5/6" />
               </div>
-            ) : tableColumns[selectedTable] ? (
-              <>
-                <TabsContent value="fields" className="space-y-4 mt-0">
-                  <div>
-                    <div className="flex justify-between items-center mb-2">
-                      <h3 className="text-sm font-medium">Champs de recherche</h3>
-                      <div className="flex gap-2">
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => selectAllFields(selectedTable, 'searchFields')}
-                        >
-                          Tout sélectionner
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => clearAllFields(selectedTable, 'searchFields')}
-                        >
-                          Tout désélectionner
-                        </Button>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-                      {tableColumns[selectedTable].map(column => (
-                        <div key={`search-${column}`} className="flex items-center space-x-2">
-                          <Checkbox 
-                            id={`search-${column}`} 
-                            checked={getSelectedTableConfig().searchFields.includes(column)}
-                            onCheckedChange={() => toggleField(selectedTable, column, 'searchFields')}
-                          />
-                          <label
-                            htmlFor={`search-${column}`}
-                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                          >
-                            {column}
-                          </label>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  <Separator />
-                  
-                  <div>
-                    <div className="flex justify-between items-center mb-2">
-                      <h3 className="text-sm font-medium">Champs d'affichage</h3>
-                      <div className="flex gap-2">
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => selectAllFields(selectedTable, 'displayFields')}
-                        >
-                          Tout sélectionner
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => clearAllFields(selectedTable, 'displayFields')}
-                        >
-                          Tout désélectionner
-                        </Button>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-                      {tableColumns[selectedTable].map(column => (
-                        <div key={`display-${column}`} className="flex items-center space-x-2">
-                          <Checkbox 
-                            id={`display-${column}`} 
-                            checked={getSelectedTableConfig().displayFields.includes(column)}
-                            onCheckedChange={() => toggleField(selectedTable, column, 'displayFields')}
-                          />
-                          <label
-                            htmlFor={`display-${column}`}
-                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                          >
-                            {column}
-                          </label>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </TabsContent>
-                
-                <TabsContent value="mapping" className="mt-0 space-y-6">
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-sm font-medium">Correspondance des colonnes</h3>
-                    <div className="flex gap-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => autoMapColumns(selectedTable)}
-                      >
-                        Auto-mapping
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => clearColumnMappings(selectedTable)}
-                      >
-                        Effacer tout
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  <div className="text-sm text-muted-foreground mb-4">
-                    Spécifiez comment les champs de cette table correspondent aux champs standards. 
-                    Exemple: si la colonne pour la marque s'appelle "brand_name", associez-la à "brand".
-                  </div>
-                  
-                  <div className="space-y-4">
-                    {standardColumns.map(({ id, label }) => {
-                      const tableConfig = getSelectedTableConfig();
-                      const currentMapping = tableConfig.columnMapping?.[id] || '';
-                      
-                      return (
-                        <div key={id} className="grid grid-cols-12 gap-4 items-center">
-                          <Label htmlFor={`map-${id}`} className="col-span-3">
-                            {label} ({id})
-                          </Label>
-                          <div className="col-span-9">
-                            <select
-                              id={`map-${id}`}
-                              className="w-full rounded-md border border-input bg-background px-3 py-2"
-                              value={currentMapping}
-                              onChange={(e) => updateColumnMapping(selectedTable, id, e.target.value)}
-                            >
-                              <option value="">-- Sélectionner une colonne --</option>
-                              {tableColumns[selectedTable].map(column => (
-                                <option key={column} value={column}>
-                                  {column}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </TabsContent>
-              </>
-            ) : (
+            ) : !tableColumns[selectedTable] ? (
               <div className="text-center py-4 opacity-70">
                 Impossible de charger les colonnes pour cette table.
               </div>
+            ) : (
+              <>
+                {configTab === 'fields' && renderFieldsTab()}
+                {configTab === 'mapping' && renderMappingTab()}
+              </>
             )}
           </CardContent>
           <CardFooter>
