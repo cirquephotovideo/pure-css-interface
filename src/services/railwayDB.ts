@@ -2,6 +2,25 @@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+// Product interface to match our database schema
+export interface Product {
+  id: string;
+  reference: string;
+  barcode: string;
+  description: string;
+  brand: string;
+  location: string;
+  imageUrl: string;
+  catalog: string;
+  prices: {
+    type: string;
+    value: number;
+  }[];
+  eco?: {
+    [key: string]: number;
+  };
+}
+
 interface QueryResult<T> {
   data: T[] | null;
   count: number;
@@ -49,7 +68,7 @@ export async function fetchProducts() {
     LIMIT 20
   `;
   
-  return executeRailwayQuery(query);
+  return executeRailwayQuery<Product>(query);
 }
 
 /**
@@ -69,5 +88,5 @@ export async function searchProducts(searchTerm: string) {
     LIMIT 20
   `;
   
-  return executeRailwayQuery(query, [`%${searchTerm}%`]);
+  return executeRailwayQuery<Product>(query);
 }

@@ -1,27 +1,9 @@
-
 import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableHeader, TableHead, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Info } from 'lucide-react';
-
-interface Product {
-  id: string;
-  reference: string;
-  barcode: string;
-  description: string;
-  brand: string;
-  location: string;
-  imageUrl: string;
-  catalog: string;
-  prices: {
-    type: string;
-    value: number;
-  }[];
-  eco?: {
-    [key: string]: number;
-  };
-}
+import { Product } from '@/services/railwayDB';
 
 interface ProductDisplayProps {
   products: Product[];

@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import Sidebar from '@/components/Sidebar';
 import SearchBar from '@/components/SearchBar';
 import ProductDisplay from '@/components/ProductDisplay';
-import { fetchProducts, searchProducts } from '@/services/railwayDB';
+import { fetchProducts, searchProducts, Product } from '@/services/railwayDB';
 import { toast } from 'sonner';
 
 const Index = () => {
@@ -20,7 +20,7 @@ const Index = () => {
   });
 
   // Get products from the query result or use empty array
-  const products = productsData?.data || [];
+  const products: Product[] = productsData?.data || [];
 
   useEffect(() => {
     if (error) {
