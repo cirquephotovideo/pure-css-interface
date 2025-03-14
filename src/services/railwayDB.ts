@@ -1,5 +1,4 @@
 
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 // Product interface to match our database schema for products table
@@ -32,6 +31,13 @@ interface QueryResult<T> {
   error: string | null;
 }
 
+// Configuration de la connexion Railway DB
+const RAILWAY_DB_HOST = import.meta.env.VITE_RAILWAY_DB_HOST;
+const RAILWAY_DB_PORT = import.meta.env.VITE_RAILWAY_DB_PORT;
+const RAILWAY_DB_NAME = import.meta.env.VITE_RAILWAY_DB_NAME;
+const RAILWAY_DB_USER = import.meta.env.VITE_RAILWAY_DB_USER;
+const RAILWAY_DB_PASSWORD = import.meta.env.VITE_RAILWAY_DB_PASSWORD;
+
 /**
  * Execute a query on the Railway PostgreSQL database
  * @param query SQL query to execute
@@ -45,40 +51,67 @@ export async function executeRailwayQuery<T>(
   try {
     console.log("Executing Railway query:", query, "with params:", params);
     
-    const response = await supabase.functions.invoke("railway-db", {
-      body: { query, params },
-    });
-
-    // Handle edge function specific errors
-    if (response.error) {
-      console.error("Error from edge function:", response.error);
-      const errorMessage = response.error.message || "Unknown edge function error";
-      toast.error("Railway connection error: " + errorMessage);
+    // Vérifier que les variables d'environnement sont définies
+    if (!RAILWAY_DB_HOST || !RAILWAY_DB_PORT || !RAILWAY_DB_NAME || !RAILWAY_DB_USER || !RAILWAY_DB_PASSWORD) {
+      const errorMessage = "Configuration Railway DB manquante. Vérifiez les variables d'environnement.";
+      console.error(errorMessage);
+      toast.error(errorMessage);
       return { data: null, count: 0, error: errorMessage };
     }
-
-    const data = response.data as QueryResult<T>;
     
-    // Handle database errors that were returned with a 200 status
-    if (data.error) {
-      console.error("Database error returned:", data.error);
-      toast.error("Database error: " + data.error);
-      return data;
+    // Préparer l'URL de connexion PostgreSQL
+    const connectionString = `postgres://${RAILWAY_DB_USER}:${encodeURIComponent(RAILWAY_DB_PASSWORD)}@${RAILWAY_DB_HOST}:${RAILWAY_DB_PORT}/${RAILWAY_DB_NAME}`;
+    
+    // Préparer le corps de la requête avec la query et les paramètres
+    const requestBody = {
+      query,
+      params,
+      connectionString
+    };
+    
+    // Utiliser une API intermédiaire pour exécuter la requête PostgreSQL
+    // Cette API doit être configurée séparément (par exemple avec Express.js)
+    const response = await fetch("https://votre-api-railway-pg.com/query", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(requestBody),
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Railway API error:", response.status, errorText);
+      const errorMessage = `Erreur de l'API Railway (${response.status}): ${errorText}`;
+      toast.error(errorMessage);
+      return { data: null, count: 0, error: errorMessage };
     }
-
-    console.log("Railway query result:", data);
-    return data;
-  } catch (error) {
-    console.error("Error calling Railway DB function:", error);
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
     
-    // Show more detailed error toast
+    const result = await response.json();
+    console.log("Railway query result:", result);
+    
+    if (result.error) {
+      console.error("Database error returned:", result.error);
+      toast.error("Erreur de base de données: " + result.error);
+      return result;
+    }
+    
+    return {
+      data: result.data || [],
+      count: result.data?.length || 0,
+      error: null
+    };
+  } catch (error) {
+    console.error("Error executing Railway DB query:", error);
+    const errorMessage = error instanceof Error ? error.message : "Erreur inconnue";
+    
+    // Afficher un toast d'erreur plus détaillé
     if (errorMessage.includes("NetworkError") || errorMessage.includes("Failed to fetch")) {
-      toast.error("Network error connecting to database service. Please check your internet connection.");
+      toast.error("Erreur réseau lors de la connexion au service de base de données. Vérifiez votre connexion internet.");
     } else if (errorMessage.includes("timeout")) {
-      toast.error("Database connection timed out. Please try again later.");
+      toast.error("La connexion à la base de données a expiré. Veuillez réessayer plus tard.");
     } else {
-      toast.error("Database connection error: " + errorMessage);
+      toast.error("Erreur de connexion à la base de données: " + errorMessage);
     }
     
     return { data: null, count: 0, error: errorMessage };
