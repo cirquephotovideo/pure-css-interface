@@ -19,24 +19,29 @@ export async function handleRequest(req) {
       queryProvided: !!query,
       paramsProvided: !!params,
       readOnly,
-      dbConfigProvided: !!dbConfig
+      dbConfigProvided: !!dbConfig,
+      queryPreview: query ? query.substring(0, 100) + (query.length > 100 ? '...' : '') : null,
+      paramsPreview: params ? JSON.stringify(params).substring(0, 100) : null
     });
 
     // Validate database configuration
     const configValidation = validateDbConfig(dbConfig);
     if (!configValidation.valid) {
+      console.error("DB config validation failed:", configValidation.error);
       return createErrorResponse(configValidation.error, 500);
     }
 
     // Validate Railway token
     const tokenValidation = validateRailwayToken(req.headers);
     if (!tokenValidation.valid) {
+      console.error("Railway token validation failed:", tokenValidation.error);
       return createErrorResponse(tokenValidation.error, 401);
     }
 
     // Validate the SQL query
     const queryValidation = validateQuery(query, readOnly);
     if (!queryValidation.valid) {
+      console.error("Query validation failed:", queryValidation.error);
       return createErrorResponse(queryValidation.error, 400);
     }
 
@@ -52,16 +57,26 @@ export async function handleRequest(req) {
       await client.connect();
       console.log("Successfully connected to Railway DB");
     } catch (connectError) {
-      console.error("Error connecting to Railway DB:", connectError.message);
+      console.error("Error connecting to Railway DB:", connectError.message, connectError.stack);
       return createErrorResponse(`Connection failed: ${connectError.message}. Please check Railway database configuration.`, 500);
     }
 
     try {
       // Execute the query
+      console.log("Executing query:", query.substring(0, 200) + (query.length > 200 ? '...' : ''));
+      console.log("With params:", params);
+      
       const result = await executeQuery(client, query, params);
       
       if (!result.success) {
+        console.error("Query execution failed:", result.error);
         return createErrorResponse(result.error, 500);
+      }
+      
+      console.log(`Query successful. Returned ${result.count} rows.`);
+      // Log a sample of the result for debugging if available
+      if (result.data && result.data.length > 0) {
+        console.log("Sample result row:", JSON.stringify(result.data[0]).substring(0, 200));
       }
       
       return createSuccessResponse(result.data, result.count);
