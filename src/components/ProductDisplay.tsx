@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableHeader, TableHead, TableRow } from '@/components/ui/table';
@@ -98,7 +99,7 @@ const ProductRow: React.FC<{
       
       <div className="flex gap-4 items-center flex-1">
         <div className="w-20 h-16 bg-white/50 rounded-xl flex items-center justify-center flex-shrink-0">
-          <img src={product.imageUrl || "public/placeholder.svg"} alt={product.reference} className="max-w-full max-h-full object-contain" />
+          <img src={product.imageUrl || "/placeholder.svg"} alt={product.reference} className="max-w-full max-h-full object-contain" />
         </div>
         
         <div className="flex flex-col gap-1 flex-1">
@@ -130,10 +131,8 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
         <div className="flex gap-4 text-sm">
           <div className="ios-surface px-3 py-1 text-sm font-medium">Catalogue</div>
           <div className="opacity-70 px-3 py-1 text-sm">Stock</div>
-          <div className="opacity-70 px-3 py-1 text-sm">
-        </div>
-          <div className="opacity-70 px-3 py-1 text-sm">
-        </div>
+          <div className="opacity-70 px-3 py-1 text-sm"></div>
+          <div className="opacity-70 px-3 py-1 text-sm"></div>
         </div>
         
         <button className="ios-button text-sm">
