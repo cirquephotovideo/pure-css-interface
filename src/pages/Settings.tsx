@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   RAILWAY_DB_HOST, 
@@ -47,6 +46,15 @@ const Settings = () => {
   
   // Load saved table configurations on component mount
   useEffect(() => {
+    // Log current configuration at component mount
+    console.log("Settings component mounted with DB config:", {
+      host: RAILWAY_DB_HOST,
+      port: RAILWAY_DB_PORT,
+      database: RAILWAY_DB_NAME,
+      user: RAILWAY_DB_USER,
+      passwordProvided: RAILWAY_DB_PASSWORD ? "Yes" : "No"
+    });
+    
     const savedTableConfigs = localStorage.getItem('railway_search_tables');
     if (savedTableConfigs) {
       try {
@@ -77,6 +85,14 @@ const Settings = () => {
   };
 
   const saveSettings = () => {
+    // Validate settings first
+    if (!dbSettings.host || !dbSettings.port || !dbSettings.database || !dbSettings.user) {
+      toast.error("Paramètres incomplets", { 
+        description: "Tous les champs sauf le mot de passe sont obligatoires."
+      });
+      return;
+    }
+    
     // Save settings to localStorage
     localStorage.setItem('railway_db_settings', JSON.stringify(dbSettings));
     
@@ -98,6 +114,15 @@ const Settings = () => {
       window.RAILWAY_DB_USER = dbSettings.user;
       // @ts-ignore
       window.RAILWAY_DB_PASSWORD = dbSettings.password;
+      
+      // Log the updated settings
+      console.log("Railway DB settings updated:", {
+        host: dbSettings.host,
+        port: dbSettings.port,
+        database: dbSettings.database,
+        user: dbSettings.user,
+        passwordProvided: dbSettings.password ? "Yes" : "No"
+      });
     }
     
     toast.success("Paramètres de connexion enregistrés", {
@@ -117,6 +142,14 @@ const Settings = () => {
         user: dbSettings.user,
         password: dbSettings.password,
       };
+      
+      console.log("Testing connection with settings:", {
+        host: testSettings.host,
+        port: testSettings.port,
+        database: testSettings.database,
+        user: testSettings.user,
+        passwordProvided: testSettings.password ? "Yes" : "No"
+      });
       
       // Temporarily set the connection parameters on window for the test
       if (window) {
@@ -148,12 +181,21 @@ const Settings = () => {
           const result = await executeRailwayQuery(query);
           
           if (result.error) {
+            console.error("Connection test failed:", result.error);
             toast.error("Échec de la connexion", {
               description: `Erreur: ${result.error}`
             });
           } else {
+            console.log("Connection test successful:", result);
             toast.success("Connexion réussie!", {
               description: "La connexion à la base de données Railway a été établie avec succès."
+            });
+            
+            // If the test was successful, save the settings automatically
+            localStorage.setItem('railway_db_settings', JSON.stringify(testSettings));
+            setCurrentSettings({
+              ...testSettings,
+              password: testSettings.password ? '••••••••' : 'Non défini',
             });
           }
         } finally {

@@ -11,30 +11,88 @@ import { LogLevel, logMessage } from "./logger";
 export function validateDbConfig(): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
   
-  // Check if environment variables are present and not empty
-  if (!import.meta.env.VITE_RAILWAY_DB_HOST && 
-      !import.meta.env.VITE_RAILWAY_DB_CONNECTION_STRING) {
-    errors.push("RAILWAY_DB_HOST");
+  // Check if DB configuration is available from various sources
+  // First check window object for runtime config
+  let hasWindowConfig = false;
+  
+  if (typeof window !== 'undefined') {
+    const hasAllWindowConfig = 
+      // @ts-ignore
+      window.RAILWAY_DB_HOST && 
+      // @ts-ignore
+      window.RAILWAY_DB_PORT && 
+      // @ts-ignore
+      window.RAILWAY_DB_NAME && 
+      // @ts-ignore
+      window.RAILWAY_DB_USER && 
+      // @ts-ignore
+      window.RAILWAY_DB_PASSWORD;
+      
+    if (hasAllWindowConfig) {
+      hasWindowConfig = true;
+      console.log("Found complete Railway DB config in window object");
+    }
   }
   
-  if (!import.meta.env.VITE_RAILWAY_DB_PORT && 
-      !import.meta.env.VITE_RAILWAY_DB_CONNECTION_STRING) {
-    errors.push("RAILWAY_DB_PORT");
+  // If already validated from window object, we're good
+  if (hasWindowConfig) {
+    return { valid: true, errors: [] };
   }
   
-  if (!import.meta.env.VITE_RAILWAY_DB_NAME && 
-      !import.meta.env.VITE_RAILWAY_DB_CONNECTION_STRING) {
-    errors.push("RAILWAY_DB_NAME");
+  // Check localStorage for config
+  let hasLocalStorageConfig = false;
+  if (typeof localStorage !== 'undefined') {
+    const storedSettings = localStorage.getItem('railway_db_settings');
+    if (storedSettings) {
+      try {
+        const settings = JSON.parse(storedSettings);
+        if (settings.host && settings.port && settings.database && settings.user && settings.password) {
+          hasLocalStorageConfig = true;
+          console.log("Found complete Railway DB config in localStorage");
+        }
+      } catch (e) {
+        console.error("Error parsing stored DB settings:", e);
+      }
+    }
   }
   
-  if (!import.meta.env.VITE_RAILWAY_DB_USER && 
-      !import.meta.env.VITE_RAILWAY_DB_CONNECTION_STRING) {
-    errors.push("RAILWAY_DB_USER");
+  // If validated from localStorage, we're good
+  if (hasLocalStorageConfig) {
+    return { valid: true, errors: [] };
   }
   
-  if (!import.meta.env.VITE_RAILWAY_DB_PASSWORD && 
-      !import.meta.env.VITE_RAILWAY_DB_CONNECTION_STRING) {
-    errors.push("RAILWAY_DB_PASSWORD");
+  // Check for connection string in environment
+  if (import.meta.env.VITE_RAILWAY_DB_CONNECTION_STRING) {
+    console.log("Found Railway DB connection string in environment");
+    return { valid: true, errors: [] };
+  }
+  
+  // Check if individual environment variables are present and not empty
+  const missingEnvVars = [];
+  
+  if (!import.meta.env.VITE_RAILWAY_DB_HOST) {
+    missingEnvVars.push("RAILWAY_DB_HOST");
+  }
+  
+  if (!import.meta.env.VITE_RAILWAY_DB_PORT) {
+    missingEnvVars.push("RAILWAY_DB_PORT");
+  }
+  
+  if (!import.meta.env.VITE_RAILWAY_DB_NAME) {
+    missingEnvVars.push("RAILWAY_DB_NAME");
+  }
+  
+  if (!import.meta.env.VITE_RAILWAY_DB_USER) {
+    missingEnvVars.push("RAILWAY_DB_USER");
+  }
+  
+  if (!import.meta.env.VITE_RAILWAY_DB_PASSWORD) {
+    missingEnvVars.push("RAILWAY_DB_PASSWORD");
+  }
+  
+  // If any environment variables are missing, add them to errors
+  if (missingEnvVars.length > 0) {
+    errors.push(...missingEnvVars);
   }
   
   return { 
