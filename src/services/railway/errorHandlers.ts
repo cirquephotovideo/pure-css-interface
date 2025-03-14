@@ -1,4 +1,3 @@
-
 /**
  * Error handling utilities for Railway DB services
  */
@@ -12,11 +11,31 @@ import { LogLevel, logMessage } from "./logger";
 export function validateDbConfig(): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
   
-  if (!import.meta.env.VITE_RAILWAY_DB_HOST) errors.push("RAILWAY_DB_HOST");
-  if (!import.meta.env.VITE_RAILWAY_DB_PORT) errors.push("RAILWAY_DB_PORT");
-  if (!import.meta.env.VITE_RAILWAY_DB_NAME) errors.push("RAILWAY_DB_NAME");
-  if (!import.meta.env.VITE_RAILWAY_DB_USER) errors.push("RAILWAY_DB_USER");
-  if (!import.meta.env.VITE_RAILWAY_DB_PASSWORD) errors.push("RAILWAY_DB_PASSWORD");
+  // Check if environment variables are present and not empty
+  if (!import.meta.env.VITE_RAILWAY_DB_HOST && 
+      !import.meta.env.VITE_RAILWAY_DB_CONNECTION_STRING) {
+    errors.push("RAILWAY_DB_HOST");
+  }
+  
+  if (!import.meta.env.VITE_RAILWAY_DB_PORT && 
+      !import.meta.env.VITE_RAILWAY_DB_CONNECTION_STRING) {
+    errors.push("RAILWAY_DB_PORT");
+  }
+  
+  if (!import.meta.env.VITE_RAILWAY_DB_NAME && 
+      !import.meta.env.VITE_RAILWAY_DB_CONNECTION_STRING) {
+    errors.push("RAILWAY_DB_NAME");
+  }
+  
+  if (!import.meta.env.VITE_RAILWAY_DB_USER && 
+      !import.meta.env.VITE_RAILWAY_DB_CONNECTION_STRING) {
+    errors.push("RAILWAY_DB_USER");
+  }
+  
+  if (!import.meta.env.VITE_RAILWAY_DB_PASSWORD && 
+      !import.meta.env.VITE_RAILWAY_DB_CONNECTION_STRING) {
+    errors.push("RAILWAY_DB_PASSWORD");
+  }
   
   return { 
     valid: errors.length === 0, 

@@ -3,7 +3,7 @@
  * API service for communicating with Railway DB Edge Function
  */
 import { QueryResult } from "./types";
-import { LogLevel, logMessage } from "./logger";
+import { LogLevel, logMessage, addToLogBuffer } from "./logger";
 import { handleApiError, handleNetworkError } from "./errorHandlers";
 import { 
   RAILWAY_DB_HOST, 
@@ -31,6 +31,8 @@ export async function sendQueryToRailwayAPI<T>(
       passwordProvided: RAILWAY_DB_PASSWORD ? "Yes" : "No"
     });
     
+    addToLogBuffer(LogLevel.INFO, `Connexion à la base de données: ${RAILWAY_DB_HOST}:${RAILWAY_DB_PORT}/${RAILWAY_DB_NAME}`);
+    
     // Use the edge function Supabase to execute the PostgreSQL query
     const response = await fetch("https://hspgrehyavlqiilrajor.supabase.co/functions/v1/railway-db", {
       method: "POST",
@@ -56,15 +58,18 @@ export async function sendQueryToRailwayAPI<T>(
     
     if (!response.ok) {
       const errorMessage = await handleApiError(response);
+      addToLogBuffer(LogLevel.ERROR, `Erreur API: ${errorMessage}`);
       return { data: null, count: 0, error: errorMessage };
     }
     
     // Handle successful response
     const result = await response.json();
     logMessage(LogLevel.INFO, "Railway query result received", { rowCount: result.data?.length || 0 });
+    addToLogBuffer(LogLevel.INFO, `Résultat: ${result.data?.length || 0} lignes trouvées`);
     
     if (result.error) {
       logMessage(LogLevel.ERROR, "Database error returned", { error: result.error });
+      addToLogBuffer(LogLevel.ERROR, `Erreur base de données: ${result.error}`);
       return result;
     }
     
@@ -76,6 +81,7 @@ export async function sendQueryToRailwayAPI<T>(
   } catch (fetchError) {
     // Network or fetch-related errors
     const errorMessage = handleNetworkError(fetchError);
+    addToLogBuffer(LogLevel.ERROR, `Erreur réseau: ${errorMessage}`);
     return { data: null, count: 0, error: errorMessage };
   }
 }

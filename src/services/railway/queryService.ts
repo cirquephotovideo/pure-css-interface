@@ -5,7 +5,7 @@
 import { toast } from "sonner";
 import { QueryResult } from "./types";
 import { isReadOnlyQuery } from "./utils";
-import { LogLevel, logMessage } from "./logger";
+import { LogLevel, logMessage, addToLogBuffer } from "./logger";
 import { validateDbConfig, handleUnexpectedError } from "./errorHandlers";
 import { sendQueryToRailwayAPI } from "./apiService";
 
@@ -25,22 +25,24 @@ export async function executeRailwayQuery<T>(
     // Validate DB configuration
     const configValidation = validateDbConfig();
     if (!configValidation.valid) {
-      const errorMessage = `Configuration Railway DB incomplète: ${configValidation.errors.join(', ')}. Vérifiez les variables d'environnement.`;
-      logMessage(LogLevel.ERROR, errorMessage);
-      toast.error(errorMessage);
-      return { data: null, count: 0, error: errorMessage };
+      const errorMsg = `Configuration Railway DB incomplète: ${configValidation.errors.join(', ')}. Vérifiez les variables d'environnement.`;
+      logMessage(LogLevel.ERROR, errorMsg);
+      addToLogBuffer(LogLevel.ERROR, errorMsg);
+      toast.error(errorMsg);
+      return { data: null, count: 0, error: errorMsg };
     }
     
     // Check if the query is a read-only operation
     const isReadOperation = isReadOnlyQuery(query);
     if (!isReadOperation) {
-      const errorMessage = "Opération d'écriture détectée. Le token Railway fourni est en lecture seule.";
-      logMessage(LogLevel.ERROR, errorMessage, { query });
-      toast.error(errorMessage);
+      const errorMsg = "Opération d'écriture détectée. Le token Railway fourni est en lecture seule.";
+      logMessage(LogLevel.ERROR, errorMsg, { query });
+      addToLogBuffer(LogLevel.ERROR, errorMsg);
+      toast.error(errorMsg);
       return {
         data: null,
         count: 0,
-        error: errorMessage
+        error: errorMsg
       };
     }
     
@@ -49,6 +51,7 @@ export async function executeRailwayQuery<T>(
   } catch (error) {
     // Catch-all for any unexpected errors
     const errorMessage = handleUnexpectedError(error);
+    addToLogBuffer(LogLevel.ERROR, errorMessage);
     return { data: null, count: 0, error: errorMessage };
   }
 }
