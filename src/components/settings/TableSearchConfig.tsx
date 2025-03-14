@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,12 +9,12 @@ import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { executeRailwayQuery } from "@/services/railway/queryService";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Loader2, Database, Search, Eye, Layers } from 'lucide-react';
+import { Loader2, Database, Search, Eye, Layers, Tag, Store, ShoppingCart, CreditCard } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Badge } from "@/components/ui/badge";
 
-// Interface for table configuration
 interface TableConfig {
   name: string;
   enabled: boolean;
@@ -24,29 +23,30 @@ interface TableConfig {
   columnMapping?: Record<string, string>;
 }
 
-// Standard column names for product data
 const standardColumns = [
-  { id: 'id', label: 'ID' },
-  { id: 'reference', label: 'Référence' },
-  { id: 'barcode', label: 'Code-barres' },
-  { id: 'description', label: 'Description' },
-  { id: 'brand', label: 'Marque' },
-  { id: 'supplier_code', label: 'Code fournisseur' },
-  { id: 'name', label: 'Nom' },
-  { id: 'price', label: 'Prix' },
-  { id: 'stock', label: 'Stock' },
-  { id: 'location', label: 'Emplacement' },
-  { id: 'ean', label: 'EAN' }
+  { id: 'id', label: 'ID', icon: <Tag className="h-4 w-4 mr-2" /> },
+  { id: 'reference', label: 'Référence', icon: <Tag className="h-4 w-4 mr-2" /> },
+  { id: 'barcode', label: 'Code-barres', icon: <Tag className="h-4 w-4 mr-2" /> },
+  { id: 'description', label: 'Description', icon: <Tag className="h-4 w-4 mr-2" /> },
+  { id: 'brand', label: 'Marque', icon: <Store className="h-4 w-4 mr-2" /> },
+  { id: 'supplier_code', label: 'Code fournisseur', icon: <ShoppingCart className="h-4 w-4 mr-2" /> },
+  { id: 'name', label: 'Nom', icon: <Tag className="h-4 w-4 mr-2" /> },
+  { id: 'price', label: 'Prix', icon: <CreditCard className="h-4 w-4 mr-2" /> },
+  { id: 'stock', label: 'Stock', icon: <Tag className="h-4 w-4 mr-2" /> },
+  { id: 'location', label: 'Emplacement', icon: <Tag className="h-4 w-4 mr-2" /> },
+  { id: 'ean', label: 'EAN', icon: <Tag className="h-4 w-4 mr-2" /> }
 ];
 
 interface TableSearchConfigProps {
   onChange?: (configs: TableConfig[]) => void;
   initialConfigs?: TableConfig[];
+  activeTab?: 'fields' | 'mapping';
 }
 
 const TableSearchConfig: React.FC<TableSearchConfigProps> = ({ 
   onChange, 
-  initialConfigs = []
+  initialConfigs = [],
+  activeTab = 'fields'
 }) => {
   const [loading, setLoading] = useState(true);
   const [rawTables, setRawTables] = useState<string[]>([]);
@@ -55,7 +55,11 @@ const TableSearchConfig: React.FC<TableSearchConfigProps> = ({
   const [tableColumns, setTableColumns] = useState<Record<string, string[]>>({});
   const [fetchingColumns, setFetchingColumns] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [configTab, setConfigTab] = useState('fields');
+  const [configTab, setConfigTab] = useState(activeTab);
+  
+  useEffect(() => {
+    setConfigTab(activeTab);
+  }, [activeTab]);
   
   const fetchTables = async () => {
     try {
@@ -225,7 +229,7 @@ const TableSearchConfig: React.FC<TableSearchConfigProps> = ({
     setTableConfigs(updatedConfigs);
     if (onChange) onChange(updatedConfigs);
   };
-
+  
   const autoMapColumns = (tableName: string) => {
     if (!tableColumns[tableName]) return;
     
@@ -233,18 +237,112 @@ const TableSearchConfig: React.FC<TableSearchConfigProps> = ({
     const mapping: Record<string, string> = {};
     
     standardColumns.forEach(({ id }) => {
-      const match = columns.find(col => 
-        col.toLowerCase() === id.toLowerCase() ||
-        col.toLowerCase().includes(id.toLowerCase()) ||
-        (id === 'reference' && (col.toLowerCase().includes('articlenr') || col.toLowerCase().includes('code_article'))) ||
-        (id === 'barcode' && (col.toLowerCase().includes('ean') || col.toLowerCase().includes('code_barre'))) ||
-        (id === 'brand' && (col.toLowerCase().includes('marque') || col.toLowerCase() === 'brand')) ||
-        (id === 'supplier_code' && (col.toLowerCase().includes('oemnr') || col.toLowerCase().includes('supplierid'))) ||
-        (id === 'name' && (col.toLowerCase().includes('designation') || col.toLowerCase().includes('nom'))) ||
-        (id === 'price' && (col.toLowerCase().includes('price') || col.toLowerCase().includes('prix'))) ||
-        (id === 'stock' && (col.toLowerCase().includes('stock') || col.toLowerCase().includes('quantity'))) ||
-        (id === 'location' && col.toLowerCase().includes('location'))
-      );
+      const match = columns.find(col => {
+        const colLower = col.toLowerCase();
+        
+        if (id === 'id' && (colLower === 'id' || colLower.endsWith('_id') || colLower === 'uid')) {
+          return true;
+        }
+        
+        if (id === 'reference' && (
+          colLower === 'reference' || 
+          colLower.includes('ref') || 
+          colLower.includes('articlenr') || 
+          colLower.includes('code_article') ||
+          colLower.includes('product_code') ||
+          colLower.includes('sku')
+        )) {
+          return true;
+        }
+        
+        if (id === 'barcode' && (
+          colLower === 'barcode' || 
+          colLower.includes('code_barre') || 
+          colLower.includes('upc') ||
+          colLower.includes('gtin')
+        )) {
+          return true;
+        }
+        
+        if (id === 'description' && (
+          colLower === 'description' || 
+          colLower.includes('desc') || 
+          colLower.includes('description_odr') ||
+          colLower.includes('product_desc')
+        )) {
+          return true;
+        }
+        
+        if (id === 'brand' && (
+          colLower === 'brand' || 
+          colLower.includes('marque') || 
+          colLower.includes('manufacturer') ||
+          colLower.includes('maker')
+        )) {
+          return true;
+        }
+        
+        if (id === 'supplier_code' && (
+          colLower.includes('supplier') || 
+          colLower.includes('oemnr') || 
+          colLower.includes('vendor') ||
+          colLower.includes('fournisseur')
+        )) {
+          return true;
+        }
+        
+        if (id === 'name' && (
+          colLower === 'name' || 
+          colLower.includes('nom') || 
+          colLower.includes('designation') ||
+          colLower.includes('title') ||
+          colLower.includes('product_name')
+        )) {
+          return true;
+        }
+        
+        if (id === 'price' && (
+          colLower === 'price' || 
+          colLower.includes('prix') || 
+          colLower.includes('cost') ||
+          colLower.includes('tarif') ||
+          colLower.includes('montant')
+        )) {
+          return true;
+        }
+        
+        if (id === 'stock' && (
+          colLower === 'stock' || 
+          colLower.includes('qty') || 
+          colLower.includes('quantity') ||
+          colLower.includes('inventory') ||
+          colLower.includes('disponible')
+        )) {
+          return true;
+        }
+        
+        if (id === 'location' && (
+          colLower.includes('location') || 
+          colLower.includes('emplacement') || 
+          colLower.includes('storage') ||
+          colLower.includes('position') ||
+          colLower.includes('warehouse')
+        )) {
+          return true;
+        }
+        
+        if (id === 'ean' && (
+          colLower === 'ean' || 
+          colLower.includes('eannr') || 
+          colLower.includes('ean13') ||
+          colLower.includes('ean8') ||
+          colLower.includes('european_article_number')
+        )) {
+          return true;
+        }
+        
+        return colLower === id.toLowerCase();
+      });
       
       if (match) {
         mapping[id] = match;
@@ -286,7 +384,7 @@ const TableSearchConfig: React.FC<TableSearchConfigProps> = ({
   const handleSelectTable = (tableName: string) => {
     setSelectedTable(tableName);
     fetchColumnsForTable(tableName);
-    setConfigTab('fields');
+    setConfigTab(activeTab);
   };
   
   const getSelectedTableConfig = () => {
@@ -394,6 +492,9 @@ const TableSearchConfig: React.FC<TableSearchConfigProps> = ({
   const renderMappingTab = () => {
     if (!selectedTable || !tableColumns[selectedTable]) return null;
     
+    const tableConfig = getSelectedTableConfig();
+    const columnMapping = tableConfig.columnMapping || {};
+    
     return (
       <div className="space-y-6">
         <div className="flex justify-between items-center mb-4">
@@ -417,20 +518,39 @@ const TableSearchConfig: React.FC<TableSearchConfigProps> = ({
         </div>
         
         <div className="text-sm text-muted-foreground mb-4">
-          Spécifiez comment les champs de cette table correspondent aux champs standards. 
-          Exemple: si la colonne pour la marque s'appelle "brand_name", associez-la à "brand".
+          <p>Spécifiez comment les champs de cette table correspondent aux champs standards.</p>
+          <p className="mt-1">Exemple: si la colonne pour la marque s'appelle "brand_name", associez-la à "brand".</p>
+        </div>
+        
+        <div className="bg-muted/30 p-4 rounded-md mb-4">
+          <h4 className="text-sm font-medium mb-2">Mappings actuels:</h4>
+          {Object.keys(columnMapping).length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {Object.entries(columnMapping).map(([standardField, tableField]) => (
+                <Badge key={standardField} variant="outline" className="flex items-center gap-1">
+                  <span className="font-semibold">{
+                    standardColumns.find(col => col.id === standardField)?.label || standardField
+                  }</span>
+                  <span className="text-muted-foreground">→</span>
+                  <span className="font-mono text-xs">{tableField}</span>
+                </Badge>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">Aucun mapping défini</p>
+          )}
         </div>
         
         <ScrollArea className="h-[400px]">
           <div className="space-y-4 p-1">
-            {standardColumns.map(({ id, label }) => {
-              const tableConfig = getSelectedTableConfig();
-              const currentMapping = tableConfig.columnMapping?.[id] || '';
+            {standardColumns.map(({ id, label, icon }) => {
+              const currentMapping = columnMapping[id] || '';
               
               return (
                 <div key={id} className="grid grid-cols-12 gap-4 items-center">
-                  <Label htmlFor={`map-${id}`} className="col-span-3">
-                    {label} ({id})
+                  <Label htmlFor={`map-${id}`} className="col-span-3 flex items-center">
+                    {icon}
+                    <span>{label}</span>
                   </Label>
                   <div className="col-span-9">
                     <select
@@ -596,3 +716,4 @@ const TableSearchConfig: React.FC<TableSearchConfigProps> = ({
 };
 
 export default TableSearchConfig;
+

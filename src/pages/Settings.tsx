@@ -23,6 +23,7 @@ interface TableConfig {
   enabled: boolean;
   searchFields: string[];
   displayFields: string[];
+  columnMapping?: Record<string, string>;
 }
 
 const Settings = () => {
@@ -242,6 +243,7 @@ const Settings = () => {
         <TabsList className="mb-6">
           <TabsTrigger value="connection">Connexion Base de Données</TabsTrigger>
           <TabsTrigger value="search">Configuration Recherche</TabsTrigger>
+          <TabsTrigger value="mapping">Mapping des Champs</TabsTrigger>
         </TabsList>
         
         <TabsContent value="connection">
@@ -346,6 +348,15 @@ Railway DB Password: ${currentSettings.password}`}
           <TableSearchConfig 
             initialConfigs={tableConfigs}
             onChange={handleTableConfigChange}
+            activeTab="fields"
+          />
+        </TabsContent>
+        
+        <TabsContent value="mapping">
+          <TableSearchConfig 
+            initialConfigs={tableConfigs}
+            onChange={handleTableConfigChange}
+            activeTab="mapping"
           />
         </TabsContent>
       </Tabs>

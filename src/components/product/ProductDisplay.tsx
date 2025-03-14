@@ -1,16 +1,30 @@
+
 import React, { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
-import { Database, Loader2, ArrowDown, ArrowUp, Filter } from 'lucide-react';
+import { Database, Loader2, ArrowDown, ArrowUp, Filter, Eye } from 'lucide-react';
 import { Product } from '@/services/railway';
 import ProductRow from './ProductRow';
 import SearchBar from '@/components/SearchBar';
 import { searchProducts, fetchProducts } from '@/services/railway/productService';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import ProductDetailDialog from './dialog/ProductDetailDialog';
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+
 interface ProductDisplayProps {
   products?: Product[];
   className?: string;
 }
+
 const ProductDisplay: React.FC<ProductDisplayProps> = ({
   products: initialProducts,
   className
@@ -21,6 +35,8 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTable, setSelectedTable] = useState<string | null>(null);
   const [tableOrder, setTableOrder] = useState<string[]>([]);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
 
   // Load initial products if none are provided
   useEffect(() => {
@@ -143,10 +159,129 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
 
   // Count unique source tables
   const sourceTables = new Set(products.map(product => product.source_table || 'products'));
-  return <div className="container py-8">
+  
+  const handleViewDetails = (product: Product) => {
+    setSelectedProduct(product);
+    setIsDetailOpen(true);
+  };
+  
+  return (
+    <div className="container py-8">
       <SearchBar onSearch={handleSearch} isLoading={loading} hasError={!!error} />
       
+      {products.length > 0 && (
+        <div className="mt-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold">
+              Résultats de recherche {searchTerm && <span className="font-normal text-muted-foreground ml-2">pour "{searchTerm}"</span>}
+            </h2>
+            
+            {sourceTables.size > 1 && (
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-muted-foreground">Filtrer par table:</span>
+                <div className="flex flex-wrap gap-2">
+                  {selectedTable && (
+                    <Badge 
+                      variant="outline" 
+                      className="cursor-pointer flex items-center gap-1"
+                      onClick={() => setSelectedTable(null)}
+                    >
+                      Tous <ArrowDown className="h-3 w-3" />
+                    </Badge>
+                  )}
+                  
+                  {!selectedTable && Array.from(sourceTables).map(table => (
+                    <Badge 
+                      key={table} 
+                      variant="outline" 
+                      className="cursor-pointer flex items-center gap-1"
+                      onClick={() => setSelectedTable(table)}
+                    >
+                      {table} <Filter className="h-3 w-3" />
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+          
+          <div className="space-y-8">
+            {groupedByTable.map(({ table, groups }) => (
+              <div key={table} className="border rounded-lg overflow-hidden">
+                <div className="bg-muted/50 px-4 py-2 flex justify-between items-center">
+                  <h3 className="font-medium text-sm">
+                    Table: <span className="font-mono">{table}</span>
+                  </h3>
+                  <span className="text-xs text-muted-foreground">
+                    {groups.reduce((acc, group) => acc + group.length, 0)} résultats
+                  </span>
+                </div>
+                
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[30%]">Référence</TableHead>
+                      <TableHead className="w-[30%]">Description</TableHead>
+                      <TableHead className="w-[15%]">Marque</TableHead>
+                      <TableHead className="w-[15%]">Prix</TableHead>
+                      <TableHead className="w-[10%]"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {groups.map((group, groupIndex) => (
+                      group.map((product, productIndex) => (
+                        <TableRow key={`${product.id}-${product.source_table}-${productIndex}`}>
+                          <TableCell className="font-medium">
+                            {product.reference || product.barcode || product.ean || "—"}
+                          </TableCell>
+                          <TableCell>
+                            {product.description || product.name || "—"}
+                          </TableCell>
+                          <TableCell>{product.brand || "—"}</TableCell>
+                          <TableCell>{product.price ? `${product.price} €` : "—"}</TableCell>
+                          <TableCell>
+                            <Button 
+                              variant="ghost" 
+                              size="icon"
+                              onClick={() => handleViewDetails(product)}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       
-    </div>;
+      {products.length === 0 && !loading && (
+        <div className="mt-8 text-center py-12">
+          <Database className="mx-auto h-12 w-12 text-muted-foreground/70" />
+          <h3 className="mt-4 text-lg font-medium">Aucun résultat trouvé</h3>
+          <p className="mt-2 text-sm text-muted-foreground">
+            {searchTerm ? 
+              `Aucun produit ne correspond à "${searchTerm}"` : 
+              "Commencez par effectuer une recherche pour voir des produits"
+            }
+          </p>
+        </div>
+      )}
+      
+      {/* Product Detail Dialog */}
+      {selectedProduct && (
+        <ProductDetailDialog
+          open={isDetailOpen}
+          onOpenChange={setIsDetailOpen}
+          product={selectedProduct}
+        />
+      )}
+    </div>
+  );
 };
+
 export default ProductDisplay;
