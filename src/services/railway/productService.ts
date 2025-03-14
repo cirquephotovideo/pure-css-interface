@@ -68,7 +68,7 @@ export async function fetchProducts(): Promise<QueryResult<Product>> {
 export async function searchProducts(term: string): Promise<QueryResult<Product>> {
   try {
     // Log the search operation
-    logMessage(LogLevel.INFO, `Recherche par terme (approximative): ${term}`);
+    logMessage(LogLevel.INFO, `Recherche par terme: ${term}`);
     
     // First, get all available tables for searching
     const tablesQuery = `
@@ -124,6 +124,7 @@ export async function searchProducts(term: string): Promise<QueryResult<Product>
       
       // Build a query part for this table
       if (table.table_name === 'products') {
+        // Enhanced search for products table - improve fuzzy matching
         tableQueries.push(`
           SELECT 
             NULL AS id, 
@@ -139,7 +140,10 @@ export async function searchProducts(term: string): Promise<QueryResult<Product>
             NULL AS ean, 
             'products' AS source_table 
           FROM "products" 
-          WHERE "BRAND"::text ILIKE $1
+          WHERE 
+            "BRAND"::text ILIKE $1 
+            OR "BRAND"::text ILIKE $2 
+            OR "BRAND"::text ILIKE $3
         `);
       } else {
         // For raw tables, try to build a meaningful mapping
@@ -155,12 +159,15 @@ export async function searchProducts(term: string): Promise<QueryResult<Product>
         const hasCodeArticle = columns.some(c => c.column_name.toLowerCase() === 'code_article');
         const hasDescriptionOdr = columns.some(c => c.column_name.toLowerCase() === 'description_odr1');
         
-        // Build a query for this raw table
-        // Convert column names to lowercase for case-insensitive comparison
+        // Build a query for this raw table with expanded search terms
         const searchableColumns = columns
           .filter(c => ['id', 'brand', 'code_article', 'oemnr', 'articlenr', 
                         'description_odr1', 'description'].includes(c.column_name.toLowerCase()))
-          .map(c => `${c.column_name}::text ILIKE $1`);
+          .map(c => `
+            ${c.column_name}::text ILIKE $1 
+            OR ${c.column_name}::text ILIKE $2
+            OR ${c.column_name}::text ILIKE $3
+          `);
         
         if (searchableColumns.length > 0) {
           tableQueries.push(`
@@ -202,10 +209,15 @@ export async function searchProducts(term: string): Promise<QueryResult<Product>
     
     logMessage(LogLevel.INFO, `Recherche de produits avec "${term}" dans ${tableQueries.length} tables`);
     
-    // Execute the combined search query
+    // Process search term for better matching
+    const exactTerm = term.trim();
+    const wildcardTerm = `%${term.trim()}%`;
+    const wordsTerm = term.trim().split(/\s+/).join('%');
+    
+    // Execute the combined search query with multiple search patterns
     const searchResult = await executeRailwayQuery<Product>(
       fullQuery, 
-      [`%${term}%`]
+      [wildcardTerm, `%${wordsTerm}%`, exactTerm]
     );
     
     if (searchResult.error) {
