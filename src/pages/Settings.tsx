@@ -37,6 +37,13 @@ const Settings = () => {
   
   const [tableConfigs, setTableConfigs] = useState<TableConfig[]>([]);
   const [testingConnection, setTestingConnection] = useState(false);
+  const [currentSettings, setCurrentSettings] = useState({
+    host: RAILWAY_DB_HOST || '',
+    port: RAILWAY_DB_PORT || '',
+    database: RAILWAY_DB_NAME || '',
+    user: RAILWAY_DB_USER || '',
+    password: RAILWAY_DB_PASSWORD ? '••••••••' : 'Non défini',
+  });
   
   // Load saved table configurations on component mount
   useEffect(() => {
@@ -46,6 +53,17 @@ const Settings = () => {
         setTableConfigs(JSON.parse(savedTableConfigs));
       } catch (e) {
         console.error('Error parsing saved table configurations:', e);
+      }
+    }
+    
+    // Load saved connection settings
+    const savedDbSettings = localStorage.getItem('railway_db_settings');
+    if (savedDbSettings) {
+      try {
+        const parsedSettings = JSON.parse(savedDbSettings);
+        setDbSettings(parsedSettings);
+      } catch (e) {
+        console.error('Error parsing saved DB settings:', e);
       }
     }
   }, []);
@@ -59,11 +77,31 @@ const Settings = () => {
   };
 
   const saveSettings = () => {
-    // In a production app, you would save these values to localStorage or a backend
-    // For now, we'll just show a toast notification
+    // Save settings to localStorage
     localStorage.setItem('railway_db_settings', JSON.stringify(dbSettings));
+    
+    // Update current settings for display
+    setCurrentSettings({
+      ...dbSettings,
+      password: dbSettings.password ? '••••••••' : 'Non défini',
+    });
+    
+    // Apply settings immediately by updating window object
+    if (window) {
+      // @ts-ignore - Directly setting environment variables on window for immediate use
+      window.RAILWAY_DB_HOST = dbSettings.host;
+      // @ts-ignore
+      window.RAILWAY_DB_PORT = dbSettings.port;
+      // @ts-ignore
+      window.RAILWAY_DB_NAME = dbSettings.database;
+      // @ts-ignore
+      window.RAILWAY_DB_USER = dbSettings.user;
+      // @ts-ignore
+      window.RAILWAY_DB_PASSWORD = dbSettings.password;
+    }
+    
     toast.success("Paramètres de connexion enregistrés", {
-      description: "Veuillez redémarrer l'application pour appliquer les changements."
+      description: "Les paramètres ont été appliqués immédiatement."
     });
   };
 
@@ -71,17 +109,80 @@ const Settings = () => {
     setTestingConnection(true);
     try {
       // Use a simple query to test the connection
-      const query = "SELECT 1 as connection_test";
-      const result = await executeRailwayQuery(query);
+      // Use the current form values for testing, not the stored ones
+      const testSettings = {
+        host: dbSettings.host,
+        port: dbSettings.port,
+        database: dbSettings.database,
+        user: dbSettings.user,
+        password: dbSettings.password,
+      };
       
-      if (result.error) {
-        toast.error("Échec de la connexion", {
-          description: `Erreur: ${result.error}`
-        });
+      // Temporarily set the connection parameters on window for the test
+      if (window) {
+        // @ts-ignore
+        const originalHost = window.RAILWAY_DB_HOST;
+        // @ts-ignore
+        const originalPort = window.RAILWAY_DB_PORT;
+        // @ts-ignore
+        const originalName = window.RAILWAY_DB_NAME;
+        // @ts-ignore
+        const originalUser = window.RAILWAY_DB_USER;
+        // @ts-ignore
+        const originalPassword = window.RAILWAY_DB_PASSWORD;
+        
+        try {
+          // @ts-ignore - Set temporary test values
+          window.RAILWAY_DB_HOST = testSettings.host;
+          // @ts-ignore
+          window.RAILWAY_DB_PORT = testSettings.port;
+          // @ts-ignore
+          window.RAILWAY_DB_NAME = testSettings.database;
+          // @ts-ignore
+          window.RAILWAY_DB_USER = testSettings.user;
+          // @ts-ignore
+          window.RAILWAY_DB_PASSWORD = testSettings.password;
+          
+          // Use a simple query to test the connection
+          const query = "SELECT 1 as connection_test";
+          const result = await executeRailwayQuery(query);
+          
+          if (result.error) {
+            toast.error("Échec de la connexion", {
+              description: `Erreur: ${result.error}`
+            });
+          } else {
+            toast.success("Connexion réussie!", {
+              description: "La connexion à la base de données Railway a été établie avec succès."
+            });
+          }
+        } finally {
+          // Restore original values
+          // @ts-ignore
+          window.RAILWAY_DB_HOST = originalHost;
+          // @ts-ignore
+          window.RAILWAY_DB_PORT = originalPort;
+          // @ts-ignore
+          window.RAILWAY_DB_NAME = originalName;
+          // @ts-ignore
+          window.RAILWAY_DB_USER = originalUser;
+          // @ts-ignore
+          window.RAILWAY_DB_PASSWORD = originalPassword;
+        }
       } else {
-        toast.success("Connexion réussie!", {
-          description: "La connexion à la base de données Railway a été établie avec succès."
-        });
+        // Direct test without window object (should not happen in browser)
+        const query = "SELECT 1 as connection_test";
+        const result = await executeRailwayQuery(query);
+        
+        if (result.error) {
+          toast.error("Échec de la connexion", {
+            description: `Erreur: ${result.error}`
+          });
+        } else {
+          toast.success("Connexion réussie!", {
+            description: "La connexion à la base de données Railway a été établie avec succès."
+          });
+        }
       }
     } catch (error) {
       console.error("Test connection error:", error);
@@ -201,11 +302,11 @@ const Settings = () => {
           <div className="mt-8">
             <h2 className="text-xl font-medium mb-4">Informations actuelles</h2>
             <pre className="bg-muted p-4 rounded-md overflow-auto">
-{`Railway DB Host: ${RAILWAY_DB_HOST}
-Railway DB Port: ${RAILWAY_DB_PORT}
-Railway DB Name: ${RAILWAY_DB_NAME}
-Railway DB User: ${RAILWAY_DB_USER}
-Railway DB Password: ${RAILWAY_DB_PASSWORD ? '••••••••' : 'Non défini'}`}
+{`Railway DB Host: ${currentSettings.host}
+Railway DB Port: ${currentSettings.port}
+Railway DB Name: ${currentSettings.database}
+Railway DB User: ${currentSettings.user}
+Railway DB Password: ${currentSettings.password}`}
             </pre>
           </div>
         </TabsContent>
