@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
-import { Search, X, Terminal } from 'lucide-react';
+import { Search, X, Terminal, BarcodeScan, FileText } from 'lucide-react';
 import { getLogBuffer, LogLevel } from '@/services/railway/logger';
 
 interface SearchBarProps {
@@ -22,6 +22,9 @@ const SearchBar: React.FC<SearchBarProps> = ({
 }) => {
   const [query, setQuery] = useState('');
   const [logs, setLogs] = useState<Array<{level: LogLevel, message: string, timestamp: string}>>([]);
+  
+  // Determine if the search looks like an EAN code
+  const isEanSearch = /^\d+$/.test(query);
   
   // Poll logs every second when searching
   useEffect(() => {
@@ -68,12 +71,17 @@ const SearchBar: React.FC<SearchBarProps> = ({
           "ios-surface flex items-center px-3 py-2 relative",
           hasError && "border border-red-300 bg-red-50/50"
         )}>
-          <Search className="text-gray-500 h-4 w-4 mr-2" />
+          {isEanSearch ? (
+            <BarcodeScan className="text-blue-500 h-4 w-4 mr-2" />
+          ) : (
+            <FileText className="text-gray-500 h-4 w-4 mr-2" />
+          )}
+          
           <Input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Saisir un terme de recherche..."
+            placeholder={isEanSearch ? "Recherche exacte par code EAN/barcode..." : "Recherche par nom, référence, description..."}
             className="flex-1 px-2 py-1 text-base border-none bg-transparent focus:outline-none shadow-none"
             disabled={isLoading}
           />
@@ -87,6 +95,13 @@ const SearchBar: React.FC<SearchBarProps> = ({
             </button>
           )}
         </div>
+        
+        {isEanSearch && query.length > 0 && (
+          <div className="text-xs text-blue-600 flex items-center gap-1">
+            <BarcodeScan className="h-3 w-3" />
+            Recherche exacte par code EAN/barcode
+          </div>
+        )}
         
         {isLoading && (
           <div className="py-2">

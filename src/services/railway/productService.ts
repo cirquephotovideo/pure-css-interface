@@ -1,4 +1,3 @@
-
 /**
  * Product service for Railway DB
  */
@@ -89,14 +88,20 @@ export async function fetchProducts(): Promise<QueryResult<Product>> {
  */
 export async function searchProducts(searchQuery: string): Promise<QueryResult<Product>> {
   try {
+    // Check if the search query looks like an EAN code (numeric only)
+    const isEanSearch = /^\d+$/.test(searchQuery);
+    
+    addToLogBuffer(LogLevel.INFO, `Recherche par ${isEanSearch ? "EAN (exacte)" : "terme (approximative)"}: ${searchQuery}`);
+    
     // First, get the list of tables to determine what we have available
     const tablesResult = await executeRailwayQuery<{table_name: string}>(
       `
-    SELECT table_name 
-    FROM information_schema.tables 
-    WHERE table_schema = 'public' 
-    AND table_name LIKE 'raw_%'
-  `
+        SELECT table_name 
+        FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND (table_name LIKE 'raw_%' OR table_name = 'products')
+        ORDER BY table_name
+      `
     );
     
     if (tablesResult.error) {
@@ -112,7 +117,7 @@ export async function searchProducts(searchQuery: string): Promise<QueryResult<P
     }
     
     // Use first 3 tables max to avoid query getting too big
-    const tables = tablesResult.data.slice(0, 3).map(t => t.table_name);
+    const tables = tablesResult.data.slice(0, 5).map(t => t.table_name);
     
     // Get columns for each table and build appropriate queries
     const queryParts = [];
@@ -137,16 +142,23 @@ export async function searchProducts(searchQuery: string): Promise<QueryResult<P
       
       const availableColumns = columnsResult.data.map(col => col.column_name);
       
-      // Find searchable columns that actually exist in this table
-      const searchableColumnsForTable = getSearchableColumns(availableColumns);
+      // Find searchable columns based on the type of search
+      const searchableColumnsForTable = isEanSearch 
+        ? getEanSearchColumns(availableColumns)  // Exact match for EAN/barcode columns
+        : getSearchableColumns(availableColumns); // Approximate match for text columns
       
       if (searchableColumnsForTable.length === 0) {
         addToLogBuffer(LogLevel.WARN, `Aucune colonne recherchable trouvée dans ${table}, table ignorée`);
         continue; // Skip this table as it has no searchable columns
       }
       
-      // Build a query specific for this table's structure
-      const tableQuery = buildSearchQueryForSpecificTable(table, availableColumns, searchableColumnsForTable);
+      // Build a query specific for this table's structure and search type
+      const tableQuery = buildSearchQueryForSpecificTable(
+        table, 
+        availableColumns, 
+        searchableColumnsForTable, 
+        isEanSearch
+      );
       queryParts.push(tableQuery);
     }
     
@@ -161,9 +173,14 @@ export async function searchProducts(searchQuery: string): Promise<QueryResult<P
     // Add a limit to avoid too many results
     const limitedQuery = `${finalQuery} LIMIT 100`;
     
-    addToLogBuffer(LogLevel.INFO, `Recherche de produits avec ${searchQuery} dans ${queryParts.length} tables`);
+    addToLogBuffer(LogLevel.INFO, `Recherche de produits avec "${searchQuery}" dans ${queryParts.length} tables`);
     
-    const result = await executeRailwayQuery<Product>(limitedQuery, [`%${searchQuery}%`]);
+    // For EAN searches use exact match, for text searches use approximate match
+    const params = isEanSearch 
+      ? [searchQuery]  // Exact match
+      : [`%${searchQuery}%`];  // Approximate match with LIKE
+    
+    const result = await executeRailwayQuery<Product>(limitedQuery, params);
     
     if (result.error) {
       addToLogBuffer(LogLevel.ERROR, `Erreur de recherche: ${result.error}`);
@@ -189,13 +206,27 @@ export async function searchProducts(searchQuery: string): Promise<QueryResult<P
 }
 
 /**
- * Get searchable columns from available columns
+ * Get columns that are specifically for EAN/barcode exact searches
+ */
+function getEanSearchColumns(availableColumns: string[]): string[] {
+  // Define potential EAN/barcode column names (in lowercase for case-insensitive comparison)
+  const potentialEanColumns = [
+    'barcode', 'eannr', 'ean', 'ean_code', 'gtin', 'upc', 'article_code'
+  ];
+  
+  // Filter columns that can be used for EAN searching
+  return availableColumns.filter(col => 
+    potentialEanColumns.includes(col.toLowerCase())
+  );
+}
+
+/**
+ * Get searchable columns from available columns for approximate text searches
  */
 function getSearchableColumns(availableColumns: string[]): string[] {
   // Define potential searchable column names (in lowercase for case-insensitive comparison)
   const potentialSearchColumns = [
     'id', 'reference', 'articlenr', 'code_article', 
-    'barcode', 'eannr', 'ean', 'ean_code', 'gtin',
     'description', 'description_odr1', 'desc', 'product_name', 'name',
     'brand', 'oemnr', 'manu_name', 'manufacturer', 'marque',
     'supplier_code', 'supplier', 'vendor', 'vendor_code',
@@ -221,9 +252,10 @@ function buildQueryForTable(tableName: string, availableColumns: string[]): stri
     brand: ['brand', 'oemnr', 'manu_name', 'manufacturer', 'marque'],
     supplier_code: ['supplier_code', 'oemnr', 'articlenr', 'supplier', 'vendor', 'vendor_code'],
     name: ['name', 'description', 'description_odr1', 'product_name'],
-    price: ['price', 'cost', 'list'],
-    stock: ['stock', 'quantity', 'qty', 'stockcap'],
-    location: ['location', 'stock_location']
+    price: ['price', 'cost', 'list', 'prix', 'price_ht', 'price_ht', 'price_euro'],
+    stock: ['stock', 'quantity', 'qty', 'stockcap', 'current_stock', 'available_stock'],
+    location: ['location', 'stock_location', 'warehouse', 'depot'],
+    ean: ['ean', 'eannr', 'ean_code', 'gtin', 'upc']
   };
   
   // Build SELECT clause
@@ -256,7 +288,7 @@ function buildQueryForTable(tableName: string, availableColumns: string[]): stri
   selectClause += selectParts.join(', ');
   
   // Complete the query
-  return `${selectClause} FROM ${tableName}`;
+  return `${selectClause} FROM "${tableName}"`;
 }
 
 /**
@@ -265,7 +297,8 @@ function buildQueryForTable(tableName: string, availableColumns: string[]): stri
 function buildSearchQueryForSpecificTable(
   tableName: string, 
   availableColumns: string[],
-  searchableColumns: string[]
+  searchableColumns: string[], 
+  isExactMatch: boolean = false
 ): string {
   // Start with the basic selection
   const baseQuery = buildQueryForTable(tableName, availableColumns);
@@ -275,44 +308,11 @@ function buildSearchQueryForSpecificTable(
     return `${baseQuery} WHERE 1=0`;
   }
   
-  // Build WHERE clause for searching
+  // Build WHERE clause based on search type
   const whereConditions = searchableColumns.map(col => 
-    `${col}::text ILIKE $1`
-  );
-  
-  return `${baseQuery} WHERE ${whereConditions.join(' OR ')}`;
-}
-
-/**
- * Helper function to build a search query for a table with available columns
- * @deprecated Use buildSearchQueryForSpecificTable instead
- */
-function buildSearchQueryForTable(tableName: string, availableColumns: string[], searchQuery: string): string {
-  // Start with the basic selection
-  const baseQuery = buildQueryForTable(tableName, availableColumns);
-  
-  // Define searchable columns
-  const searchableColumns = [
-    'reference', 'articlenr', 'code_article',
-    'barcode', 'eannr', 'ean', 
-    'description', 'description_odr1',
-    'brand', 'oemnr',
-    'name'
-  ];
-  
-  // Filter to columns that actually exist in the table
-  const existingSearchColumns = searchableColumns.filter(col => 
-    availableColumns.includes(col)
-  );
-  
-  // If no searchable columns exist, return a query that will return no results
-  if (existingSearchColumns.length === 0) {
-    return `${baseQuery} WHERE 1=0`;
-  }
-  
-  // Build WHERE clause for searching
-  const whereConditions = existingSearchColumns.map(col => 
-    `${col}::text ILIKE $1`
+    isExactMatch
+      ? `${col}::text = $1`  // Exact match for EAN codes
+      : `${col}::text ILIKE $1`  // Approximate match for text searches
   );
   
   return `${baseQuery} WHERE ${whereConditions.join(' OR ')}`;
