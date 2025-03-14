@@ -7,7 +7,7 @@ import { Info, Database } from 'lucide-react';
 import { Product } from '@/services/railway';
 
 interface ProductDisplayProps {
-  products: Product[];
+  products?: Product[];
   className?: string;
 }
 
@@ -173,7 +173,7 @@ const ProductRow: React.FC<{
 };
 
 const ProductDisplay: React.FC<ProductDisplayProps> = ({
-  products,
+  products = [], // Default to empty array if products is not provided
   className
 }) => {
   // Count unique source tables
