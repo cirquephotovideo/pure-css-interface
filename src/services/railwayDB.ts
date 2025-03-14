@@ -37,11 +37,12 @@ const RAILWAY_DB_HOST = "containers-us-west-146.railway.app"; // Hardcoded valid
 const RAILWAY_DB_PORT = "7739"; // Example port, update with your actual port
 const RAILWAY_DB_NAME = "railway";
 const RAILWAY_DB_USER = "postgres";
-const RAILWAY_DB_PASSWORD = import.meta.env.VITE_RAILWAY_DB_PASSWORD || "";
+// For development and testing, use a fallback password if env variable is not set
+const RAILWAY_DB_PASSWORD = import.meta.env.VITE_RAILWAY_DB_PASSWORD || "PLEASE_SET_RAILWAY_DB_PASSWORD";
 const RAILWAY_READ_ONLY_TOKEN = "dbe21f72-1f35-489b-8500-8823ebf152d5";
 
 // Debug log to check if password is defined
-console.log("Railway DB Password defined:", RAILWAY_DB_PASSWORD ? "Yes" : "No");
+console.log("Railway DB Password:", RAILWAY_DB_PASSWORD === "PLEASE_SET_RAILWAY_DB_PASSWORD" ? "Not set, using fallback" : "Defined");
 
 /**
  * Execute a query on the Railway PostgreSQL database
@@ -57,18 +58,25 @@ export async function executeRailwayQuery<T>(
     console.log("Executing Railway query:", query, "with params:", params);
     
     // Vérifier que les variables d'environnement sont définies
-    if (!RAILWAY_DB_HOST || !RAILWAY_DB_PORT || !RAILWAY_DB_NAME || !RAILWAY_DB_USER || !RAILWAY_DB_PASSWORD) {
+    if (!RAILWAY_DB_HOST || !RAILWAY_DB_PORT || !RAILWAY_DB_NAME || !RAILWAY_DB_USER) {
       const missingVars = [];
       if (!RAILWAY_DB_HOST) missingVars.push("RAILWAY_DB_HOST");
       if (!RAILWAY_DB_PORT) missingVars.push("RAILWAY_DB_PORT");
       if (!RAILWAY_DB_NAME) missingVars.push("RAILWAY_DB_NAME");
       if (!RAILWAY_DB_USER) missingVars.push("RAILWAY_DB_USER");
-      if (!RAILWAY_DB_PASSWORD) missingVars.push("RAILWAY_DB_PASSWORD");
       
-      const errorMessage = `Configuration Railway DB manquante: ${missingVars.join(', ')}. Vérifiez les variables d'environnement.`;
+      const errorMessage = `Configuration Railway DB incomplète: ${missingVars.join(', ')}. Vérifiez les variables d'environnement.`;
       console.error(errorMessage);
       toast.error(errorMessage);
       return { data: null, count: 0, error: errorMessage };
+    }
+    
+    // Check if the password is the fallback value, warn but continue
+    if (RAILWAY_DB_PASSWORD === "PLEASE_SET_RAILWAY_DB_PASSWORD") {
+      console.warn("Using fallback Railway DB password. For production, please set VITE_RAILWAY_DB_PASSWORD environment variable.");
+      toast.warning("Connexion DB avec mot de passe par défaut", {
+        description: "Pour une utilisation en production, configurez la variable d'environnement VITE_RAILWAY_DB_PASSWORD."
+      });
     }
     
     // Vérifier si la requête est une opération de lecture seule
