@@ -6,6 +6,14 @@ import { Product, QueryResult } from "./types";
 import { executeRailwayQuery } from "./queryService";
 import { LogLevel, addToLogBuffer, clearLogBuffer } from "./logger";
 
+// Interface for table configuration
+interface TableConfig {
+  name: string;
+  enabled: boolean;
+  searchFields: string[];
+  displayFields: string[];
+}
+
 /**
  * Fetch products from Railway database (products table)
  * @returns List of products
@@ -21,7 +29,7 @@ export async function fetchProducts(): Promise<QueryResult<Product>> {
 }
 
 /**
- * Search products in Railway database across all raw_* tables and products table
+ * Search products in Railway database based on user configuration
  * @param searchTerm Term to search for
  * @returns List of matching products
  */
@@ -30,6 +38,115 @@ export async function searchProducts(searchTerm: string): Promise<QueryResult<Pr
   clearLogBuffer();
   addToLogBuffer(LogLevel.INFO, `Début de recherche pour: "${searchTerm}"`);
   
+  const searchPattern = `%${searchTerm}%`;
+  
+  // Get the saved table configurations
+  let tableConfigs: TableConfig[] = [];
+  try {
+    const savedConfig = localStorage.getItem('railway_search_tables');
+    if (savedConfig) {
+      tableConfigs = JSON.parse(savedConfig);
+    }
+  } catch (error) {
+    addToLogBuffer(LogLevel.ERROR, `Erreur lors de la lecture de la configuration des tables: ${error}`);
+  }
+  
+  // Filter to only enabled tables
+  const enabledTables = tableConfigs.filter(config => config.enabled);
+  
+  if (enabledTables.length === 0) {
+    // If no tables are configured or enabled, fallback to the default behavior
+    addToLogBuffer(LogLevel.WARN, "Aucune table configurée pour la recherche, utilisation du comportement par défaut");
+    return searchProductsDefault(searchTerm);
+  }
+  
+  // Get list of raw_ tables if configuration is present but no enabled tables yet
+  try {
+    const tableQueries: string[] = [];
+    
+    // Add query for each enabled table
+    for (const tableConfig of enabledTables) {
+      addToLogBuffer(LogLevel.INFO, `Préparation de la recherche dans la table ${tableConfig.name}`);
+      
+      // If no search fields configured, skip this table
+      if (!tableConfig.searchFields || tableConfig.searchFields.length === 0) {
+        addToLogBuffer(LogLevel.WARN, `Aucun champ de recherche configuré pour la table ${tableConfig.name}, table ignorée`);
+        continue;
+      }
+      
+      // Build the search conditions based on configured search fields
+      const searchConditions = tableConfig.searchFields
+        .map(field => `${field}::text ILIKE $1`)
+        .join(' OR ');
+      
+      // Determine fields to select
+      let selectFields = '*';
+      if (tableConfig.displayFields && tableConfig.displayFields.length > 0) {
+        // Use specific display fields if configured
+        const displayFields = tableConfig.displayFields.join(', ');
+        selectFields = `${displayFields}`;
+      }
+      
+      // Add the query for this table
+      tableQueries.push(`
+        SELECT 
+          ${selectFields},
+          '${tableConfig.name}' as source_table
+        FROM ${tableConfig.name}
+        WHERE ${searchConditions}
+      `);
+    }
+    
+    if (tableQueries.length === 0) {
+      // If no valid queries generated, fallback to default
+      addToLogBuffer(LogLevel.WARN, "Aucune requête valide générée, utilisation du comportement par défaut");
+      return searchProductsDefault(searchTerm);
+    }
+    
+    // Combine all queries with UNION
+    const unionQuery = tableQueries.join(' UNION ALL ');
+    
+    // Add ordering and limit
+    const finalQuery = `${unionQuery} ORDER BY reference ASC LIMIT 30`;
+    
+    addToLogBuffer(LogLevel.INFO, `Exécution de la recherche dans ${tableQueries.length} tables`);
+    const result = await executeRailwayQuery<Product>(finalQuery, [searchPattern]);
+    
+    if (result.data && result.data.length > 0) {
+      // Count results by source table
+      const resultsByTable = result.data.reduce((acc, product) => {
+        const source = product.source_table || 'unknown';
+        acc[source] = (acc[source] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+      
+      // Log results breakdown
+      Object.entries(resultsByTable).forEach(([table, count]) => {
+        addToLogBuffer(LogLevel.INFO, `${count} produit(s) trouvé(s) dans la table ${table}`);
+      });
+    } else {
+      addToLogBuffer(LogLevel.WARN, "Aucun produit trouvé dans toutes les tables");
+    }
+    
+    return result;
+    
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    addToLogBuffer(LogLevel.ERROR, `Erreur lors de la recherche avec configuration: ${errorMessage}`);
+    
+    // Fallback to default search on error
+    addToLogBuffer(LogLevel.WARN, "Tentative de repli sur la recherche par défaut");
+    return searchProductsDefault(searchTerm);
+  }
+}
+
+/**
+ * Default search function that searches across raw_* tables and products
+ * Used as fallback when no configuration is available
+ * @param searchTerm Term to search for
+ * @returns List of matching products
+ */
+async function searchProductsDefault(searchTerm: string): Promise<QueryResult<Product>> {
   const searchPattern = `%${searchTerm}%`;
   
   // First, get a list of all tables starting with 'raw_'
