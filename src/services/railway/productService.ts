@@ -111,42 +111,57 @@ export async function searchProducts(searchQuery: string): Promise<QueryResult<P
       return { data: [], count: 0, error: null };
     }
     
-    // Sample a table to get column structure
-    const sampleTable = tablesResult.data[0].table_name;
-    const columnsResult = await executeRailwayQuery<{column_name: string}>(
-      `
-        SELECT column_name
-        FROM information_schema.columns
-        WHERE table_schema = 'public'
-        AND table_name = $1
-        ORDER BY ordinal_position
-      `,
-      [sampleTable]
-    );
-    
-    if (columnsResult.error) {
-      addToLogBuffer(LogLevel.ERROR, `Erreur lors de la récupération des colonnes: ${columnsResult.error}`);
-      return { data: null, count: 0, error: columnsResult.error };
-    }
-    
-    // Get columns
-    const availableColumns = columnsResult.data.map(col => col.column_name);
-    
     // Use first 3 tables max to avoid query getting too big
     const tables = tablesResult.data.slice(0, 3).map(t => t.table_name);
     
-    // Build queries for each table
-    const queries = tables.map(table => {
-      return buildSearchQueryForTable(table, availableColumns, searchQuery);
-    });
+    // Get columns for each table and build appropriate queries
+    const queryParts = [];
+    
+    for (const table of tables) {
+      // Get columns for this specific table
+      const columnsResult = await executeRailwayQuery<{column_name: string}>(
+        `
+          SELECT column_name
+          FROM information_schema.columns
+          WHERE table_schema = 'public'
+          AND table_name = $1
+          ORDER BY ordinal_position
+        `,
+        [table]
+      );
+      
+      if (columnsResult.error) {
+        addToLogBuffer(LogLevel.ERROR, `Erreur lors de la récupération des colonnes pour ${table}: ${columnsResult.error}`);
+        continue; // Skip this table but continue with others
+      }
+      
+      const availableColumns = columnsResult.data.map(col => col.column_name);
+      
+      // Find searchable columns that actually exist in this table
+      const searchableColumnsForTable = getSearchableColumns(availableColumns);
+      
+      if (searchableColumnsForTable.length === 0) {
+        addToLogBuffer(LogLevel.WARN, `Aucune colonne recherchable trouvée dans ${table}, table ignorée`);
+        continue; // Skip this table as it has no searchable columns
+      }
+      
+      // Build a query specific for this table's structure
+      const tableQuery = buildSearchQueryForSpecificTable(table, availableColumns, searchableColumnsForTable);
+      queryParts.push(tableQuery);
+    }
+    
+    if (queryParts.length === 0) {
+      addToLogBuffer(LogLevel.WARN, "Aucune table avec des colonnes recherchables n'a été trouvée");
+      return { data: [], count: 0, error: null };
+    }
     
     // Combine with UNION ALL
-    const finalQuery = queries.join(" UNION ALL ");
+    const finalQuery = queryParts.join(" UNION ALL ");
     
     // Add a limit to avoid too many results
     const limitedQuery = `${finalQuery} LIMIT 100`;
     
-    addToLogBuffer(LogLevel.INFO, `Recherche de produits avec ${searchQuery} dans ${tables.length} tables`);
+    addToLogBuffer(LogLevel.INFO, `Recherche de produits avec ${searchQuery} dans ${queryParts.length} tables`);
     
     const result = await executeRailwayQuery<Product>(limitedQuery, [`%${searchQuery}%`]);
     
@@ -174,20 +189,40 @@ export async function searchProducts(searchQuery: string): Promise<QueryResult<P
 }
 
 /**
+ * Get searchable columns from available columns
+ */
+function getSearchableColumns(availableColumns: string[]): string[] {
+  // Define potential searchable column names (in lowercase for case-insensitive comparison)
+  const potentialSearchColumns = [
+    'id', 'reference', 'articlenr', 'code_article', 
+    'barcode', 'eannr', 'ean', 'ean_code', 'gtin',
+    'description', 'description_odr1', 'desc', 'product_name', 'name',
+    'brand', 'oemnr', 'manu_name', 'manufacturer', 'marque',
+    'supplier_code', 'supplier', 'vendor', 'vendor_code',
+    'part_number', 'part_no', 'manu_part_no', 'midw_part_no'
+  ];
+  
+  // Filter columns that can be used for searching
+  return availableColumns.filter(col => 
+    potentialSearchColumns.includes(col.toLowerCase())
+  );
+}
+
+/**
  * Helper function to build a query for a table with available columns
  */
 function buildQueryForTable(tableName: string, availableColumns: string[]): string {
   // Map common product fields to available columns
   const columnMappings: Record<string, string[]> = {
-    id: ['id', 'articlenr', 'code_article'],
-    reference: ['reference', 'articlenr', 'code_article'],
-    barcode: ['barcode', 'eannr', 'ean'],
-    description: ['description', 'description_odr1', 'unspscdescription'],
-    brand: ['brand', 'oemnr'],
-    supplier_code: ['supplier_code', 'oemnr', 'articlenr'],
-    name: ['name', 'description', 'description_odr1'],
-    price: ['price'],
-    stock: ['stock'],
+    id: ['id', 'articlenr', 'code_article', 'manu_part_no', 'midw_part_no'],
+    reference: ['reference', 'articlenr', 'code_article', 'manu_part_no', 'midw_part_no'],
+    barcode: ['barcode', 'eannr', 'ean', 'ean_code', 'gtin'],
+    description: ['description', 'description_odr1', 'desc', 'product_name', 'unspscdescription'],
+    brand: ['brand', 'oemnr', 'manu_name', 'manufacturer', 'marque'],
+    supplier_code: ['supplier_code', 'oemnr', 'articlenr', 'supplier', 'vendor', 'vendor_code'],
+    name: ['name', 'description', 'description_odr1', 'product_name'],
+    price: ['price', 'cost', 'list'],
+    stock: ['stock', 'quantity', 'qty', 'stockcap'],
     location: ['location', 'stock_location']
   };
   
@@ -198,7 +233,14 @@ function buildQueryForTable(tableName: string, availableColumns: string[]): stri
   // Dynamically add each field based on available columns
   Object.entries(columnMappings).forEach(([targetField, possibleColumns]) => {
     // Find the first column that exists in the available columns
-    const foundColumn = possibleColumns.find(col => availableColumns.includes(col));
+    const matchingColumns = possibleColumns.filter(col => 
+      availableColumns.some(availCol => availCol.toLowerCase() === col.toLowerCase())
+    );
+    
+    const foundColumn = matchingColumns.length > 0 ? 
+      availableColumns.find(availCol => 
+        availCol.toLowerCase() === matchingColumns[0].toLowerCase()
+      ) : null;
     
     if (foundColumn) {
       selectParts.push(`${foundColumn} AS ${targetField}`);
@@ -218,7 +260,32 @@ function buildQueryForTable(tableName: string, availableColumns: string[]): stri
 }
 
 /**
+ * Build a search query for a specific table with its known columns
+ */
+function buildSearchQueryForSpecificTable(
+  tableName: string, 
+  availableColumns: string[],
+  searchableColumns: string[]
+): string {
+  // Start with the basic selection
+  const baseQuery = buildQueryForTable(tableName, availableColumns);
+  
+  // If no searchable columns exist, return a query that will return no results
+  if (searchableColumns.length === 0) {
+    return `${baseQuery} WHERE 1=0`;
+  }
+  
+  // Build WHERE clause for searching
+  const whereConditions = searchableColumns.map(col => 
+    `${col}::text ILIKE $1`
+  );
+  
+  return `${baseQuery} WHERE ${whereConditions.join(' OR ')}`;
+}
+
+/**
  * Helper function to build a search query for a table with available columns
+ * @deprecated Use buildSearchQueryForSpecificTable instead
  */
 function buildSearchQueryForTable(tableName: string, availableColumns: string[], searchQuery: string): string {
   // Start with the basic selection
