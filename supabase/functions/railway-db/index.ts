@@ -25,7 +25,17 @@ serve(async (req) => {
 
     if (!RAILWAY_DB_HOST || !RAILWAY_DB_PORT || !RAILWAY_DB_NAME || !RAILWAY_DB_USER || !RAILWAY_DB_PASSWORD) {
       console.error("Missing Railway database configuration variables");
-      throw new Error("Missing Railway database configuration");
+      return new Response(
+        JSON.stringify({ 
+          data: null, 
+          count: 0, 
+          error: "Missing Railway database configuration. Please check environment variables." 
+        }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, "Content-Type": "application/json" } 
+        }
+      );
     }
 
     console.log(`Attempting connection to Railway DB at ${RAILWAY_DB_HOST}:${RAILWAY_DB_PORT}/${RAILWAY_DB_NAME}`);
@@ -35,7 +45,13 @@ serve(async (req) => {
 
     if (!query) {
       console.error("No SQL query provided in request");
-      throw new Error("No SQL query provided");
+      return new Response(
+        JSON.stringify({ data: null, count: 0, error: "No SQL query provided" }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, "Content-Type": "application/json" } 
+        }
+      );
     }
 
     console.log(`Executing query: ${query.substring(0, 100)}... with params: ${JSON.stringify(params || [])}`);
@@ -50,9 +66,33 @@ serve(async (req) => {
       tls: {
         enabled: true,
       },
+      // Add connection timeout
+      connection: {
+        attempts: 3,
+        delay: 1000
+      }
     });
 
     console.log("Connecting to Railway DB...");
+    
+    // Try to resolve host name to validate connectivity
+    try {
+      const dnsCheck = await Deno.resolveDns(RAILWAY_DB_HOST, "A");
+      console.log(`DNS resolution successful for ${RAILWAY_DB_HOST}: ${JSON.stringify(dnsCheck)}`);
+    } catch (dnsError) {
+      console.error(`DNS resolution failed for ${RAILWAY_DB_HOST}: ${dnsError.message}`);
+      return new Response(
+        JSON.stringify({ 
+          data: null, 
+          count: 0, 
+          error: `DNS resolution failed: ${dnsError.message}. Please check RAILWAY_DB_HOST environment variable.` 
+        }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, "Content-Type": "application/json" } 
+        }
+      );
+    }
     
     // Connect to Railway DB
     try {
@@ -60,7 +100,17 @@ serve(async (req) => {
       console.log("Successfully connected to Railway DB");
     } catch (connectError) {
       console.error("Error connecting to Railway DB:", connectError.message);
-      throw new Error(`Connection failed: ${connectError.message}`);
+      return new Response(
+        JSON.stringify({ 
+          data: null, 
+          count: 0, 
+          error: `Connection failed: ${connectError.message}. Please check Railway database configuration.` 
+        }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, "Content-Type": "application/json" } 
+        }
+      );
     }
 
     try {
@@ -82,7 +132,17 @@ serve(async (req) => {
       );
     } catch (queryError) {
       console.error("Error executing query:", queryError.message);
-      throw new Error(`Query execution failed: ${queryError.message}`);
+      return new Response(
+        JSON.stringify({ 
+          data: null, 
+          count: 0, 
+          error: `Query execution failed: ${queryError.message}` 
+        }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, "Content-Type": "application/json" } 
+        }
+      );
     } finally {
       // Always close the connection
       console.log("Closing Railway DB connection...");
@@ -93,7 +153,11 @@ serve(async (req) => {
     console.error("Error in Railway DB function:", error.message, error.stack);
     
     return new Response(
-      JSON.stringify({ data: null, count: 0, error: error.message }),
+      JSON.stringify({ 
+        data: null, 
+        count: 0, 
+        error: `Server error: ${error.message}` 
+      }),
       { 
         status: 500, 
         headers: { ...corsHeaders, "Content-Type": "application/json" } 

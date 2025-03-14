@@ -11,7 +11,7 @@ const Index = () => {
   const [searchQuery, setSearchQuery] = useState('');
   
   // Fetch products based on search query or get all products
-  const { data: productsData, isLoading, error } = useQuery({
+  const { data: productsData, isLoading, error, isError } = useQuery({
     queryKey: ['products', searchQuery],
     queryFn: () => {
       console.log("Fetching products with search query:", searchQuery);
@@ -20,18 +20,20 @@ const Index = () => {
         : fetchProducts();
     },
     staleTime: 60 * 1000, // 1 minute
-    retry: 1, // Only retry once to avoid excessive logging
+    retry: 2, // Retry twice to account for possible network issues
+    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 30000), // Exponential backoff
   });
 
   // Get products from the query result or use empty array
   const products: Product[] = productsData?.data || [];
+  const errorMessage = productsData?.error || (error instanceof Error ? error.message : 'Unknown error');
 
   useEffect(() => {
-    if (error) {
-      console.error('Error fetching products:', error);
+    if (isError || productsData?.error) {
+      console.error('Error fetching products:', errorMessage);
       toast.error("Erreur lors de la récupération des produits");
     }
-  }, [error]);
+  }, [isError, productsData?.error, errorMessage]);
 
   // Add debug logging
   useEffect(() => {
@@ -84,10 +86,18 @@ const Index = () => {
                 <div className="flex justify-center p-12">
                   <div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div>
                 </div>
-              ) : error ? (
+              ) : isError || productsData?.error ? (
                 <div className="text-center p-8 bg-red-50 rounded-lg">
                   <p className="text-red-500 font-medium">Erreur de connexion à la base de données</p>
-                  <p className="text-sm text-red-400 mt-2">Veuillez vérifier la configuration de Railway</p>
+                  <p className="text-sm text-red-400 mt-2">
+                    {errorMessage.includes("Connection failed") || errorMessage.includes("DNS") ? 
+                      "Vérifiez la configuration de Railway et les variables d'environnement." : 
+                      "Veuillez réessayer plus tard ou contacter le support technique."}
+                  </p>
+                  <details className="mt-4 text-left">
+                    <summary className="cursor-pointer text-xs text-red-400">Détails techniques</summary>
+                    <p className="mt-2 text-xs font-mono bg-red-100/50 p-2 rounded">{errorMessage}</p>
+                  </details>
                 </div>
               ) : products.length > 0 ? (
                 <ProductDisplay products={products} />

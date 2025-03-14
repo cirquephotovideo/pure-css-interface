@@ -45,22 +45,42 @@ export async function executeRailwayQuery<T>(
   try {
     console.log("Executing Railway query:", query, "with params:", params);
     
-    const { data, error } = await supabase.functions.invoke("railway-db", {
+    const response = await supabase.functions.invoke("railway-db", {
       body: { query, params },
     });
 
-    if (error) {
-      console.error("Error executing Railway DB query:", error);
-      toast.error("Database error: " + error.message);
-      return { data: null, count: 0, error: error.message };
+    // Handle edge function specific errors
+    if (response.error) {
+      console.error("Error from edge function:", response.error);
+      const errorMessage = response.error.message || "Unknown edge function error";
+      toast.error("Railway connection error: " + errorMessage);
+      return { data: null, count: 0, error: errorMessage };
+    }
+
+    const data = response.data as QueryResult<T>;
+    
+    // Handle database errors that were returned with a 200 status
+    if (data.error) {
+      console.error("Database error returned:", data.error);
+      toast.error("Database error: " + data.error);
+      return data;
     }
 
     console.log("Railway query result:", data);
-    return data as QueryResult<T>;
+    return data;
   } catch (error) {
     console.error("Error calling Railway DB function:", error);
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    toast.error("Database connection error");
+    
+    // Show more detailed error toast
+    if (errorMessage.includes("NetworkError") || errorMessage.includes("Failed to fetch")) {
+      toast.error("Network error connecting to database service. Please check your internet connection.");
+    } else if (errorMessage.includes("timeout")) {
+      toast.error("Database connection timed out. Please try again later.");
+    } else {
+      toast.error("Database connection error: " + errorMessage);
+    }
+    
     return { data: null, count: 0, error: errorMessage };
   }
 }
