@@ -13,7 +13,11 @@ import {
   User, 
   Database,
   Tag,
-  Warehouse
+  Warehouse,
+  BarChart,
+  CreditCard,
+  Map,
+  Info
 } from 'lucide-react';
 
 export interface InfoItemProps {
@@ -57,6 +61,14 @@ const InfoItem: React.FC<InfoItemProps> = ({ label, value, icon, highlight = fal
         return <Tag className="h-4 w-4" />;
       case 'warehouse':
         return <Warehouse className="h-4 w-4" />;
+      case 'bar-chart':
+        return <BarChart className="h-4 w-4" />;
+      case 'credit-card':
+        return <CreditCard className="h-4 w-4" />;
+      case 'map':
+        return <Map className="h-4 w-4" />;
+      case 'info':
+        return <Info className="h-4 w-4" />;
       default:
         return null;
     }
