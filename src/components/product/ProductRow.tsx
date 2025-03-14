@@ -6,7 +6,7 @@ import {
 } from "@/components/ui/table";
 import { Product } from '@/services/railway/types';
 import { Button } from '@/components/ui/button';
-import { Eye, ShoppingCart, Tag } from 'lucide-react';
+import { Eye } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import ProductDetailDialog from './dialog/ProductDetailDialog';
 import { Badge } from '@/components/ui/badge';
@@ -32,7 +32,7 @@ const ProductRow: React.FC<ProductRowProps> = ({
   // Extract price from product
   const price = product.prices && product.prices.length > 0 
     ? product.prices[0].value 
-    : product.price;
+    : null;
 
   // Determine row background based on index
   const getRowClass = () => {
@@ -88,7 +88,7 @@ const ProductRow: React.FC<ProductRowProps> = ({
                 Number(product.stock) <= 0 ? (
                   <Badge variant="destructive" className="text-xs">Rupture</Badge>
                 ) : Number(product.stock) < 5 ? (
-                  <Badge variant="yellow" className="text-xs">Faible</Badge>
+                  <Badge variant="outline" className="text-xs bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800/30">Faible</Badge>
                 ) : null
               )}
             </div>
