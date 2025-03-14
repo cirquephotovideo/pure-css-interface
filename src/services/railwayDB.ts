@@ -37,6 +37,7 @@ const RAILWAY_DB_PORT = import.meta.env.VITE_RAILWAY_DB_PORT;
 const RAILWAY_DB_NAME = import.meta.env.VITE_RAILWAY_DB_NAME;
 const RAILWAY_DB_USER = import.meta.env.VITE_RAILWAY_DB_USER;
 const RAILWAY_DB_PASSWORD = import.meta.env.VITE_RAILWAY_DB_PASSWORD;
+const RAILWAY_READ_ONLY_TOKEN = import.meta.env.VITE_RAILWAY_READ_ONLY_TOKEN;
 
 /**
  * Execute a query on the Railway PostgreSQL database
@@ -59,17 +60,32 @@ export async function executeRailwayQuery<T>(
       return { data: null, count: 0, error: errorMessage };
     }
     
+    // Vérifier si la requête est une opération de lecture seule
+    const isReadOperation = isReadOnlyQuery(query);
+    if (!isReadOperation) {
+      const errorMessage = "Opération d'écriture détectée. Le token Railway fourni est en lecture seule.";
+      console.error(errorMessage);
+      toast.error(errorMessage);
+      return {
+        data: null,
+        count: 0,
+        error: errorMessage
+      };
+    }
+    
     // Utiliser l'edge function Supabase pour exécuter la requête PostgreSQL
     const response = await fetch("https://hspgrehyavlqiilrajor.supabase.co/functions/v1/railway-db", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhzcGdyZWh5YXZscWlpbHJham9yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE5NTEwNzAsImV4cCI6MjA1NzUyNzA3MH0.wGPKekL1VBzO3WpqsnyahS7ncSBXrFMJA5ZjTwljDEE",
-        "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhzcGdyZWh5YXZscWlpbHJham9yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE5NTEwNzAsImV4cCI6MjA1NzUyNzA3MH0.wGPKekL1VBzO3WpqsnyahS7ncSBXrFMJA5ZjTwljDEE"
+        "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhzcGdyZWh5YXZscWlpbHJham9yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE5NTEwNzAsImV4cCI6MjA1NzUyNzA3MH0.wGPKekL1VBzO3WpqsnyahS7ncSBXrFMJA5ZjTwljDEE",
+        "X-Railway-Token": RAILWAY_READ_ONLY_TOKEN
       },
       body: JSON.stringify({
         query,
-        params
+        params,
+        readOnly: true
       }),
     });
     
@@ -99,17 +115,19 @@ export async function executeRailwayQuery<T>(
     console.error("Error executing Railway DB query:", error);
     const errorMessage = error instanceof Error ? error.message : "Erreur inconnue";
     
-    // Afficher un toast d'erreur plus détaillé
-    if (errorMessage.includes("NetworkError") || errorMessage.includes("Failed to fetch")) {
-      toast.error("Erreur réseau lors de la connexion au service de base de données. Vérifiez votre connexion internet.");
-    } else if (errorMessage.includes("timeout")) {
-      toast.error("La connexion à la base de données a expiré. Veuillez réessayer plus tard.");
-    } else {
-      toast.error("Erreur de connexion à la base de données: " + errorMessage);
-    }
+    toast.error("Erreur de connexion à la base de données: " + errorMessage);
     
     return { data: null, count: 0, error: errorMessage };
   }
+}
+
+/**
+ * Vérifie si une requête SQL est en lecture seule
+ */
+function isReadOnlyQuery(query: string): boolean {
+  const upperQuery = query.trim().toUpperCase();
+  // Ne permet que les opérations SELECT
+  return upperQuery.startsWith('SELECT');
 }
 
 /**
