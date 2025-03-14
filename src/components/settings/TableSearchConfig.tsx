@@ -11,6 +11,8 @@ import { executeRailwayQuery } from "@/services/railway/queryService";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Loader2, Database, Search, Eye, Layers } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 // Interface for table configuration
 interface TableConfig {
@@ -319,23 +321,25 @@ const TableSearchConfig: React.FC<TableSearchConfigProps> = ({
               </Button>
             </div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-            {tableColumns[selectedTable].map(column => (
-              <div key={`search-${column}`} className="flex items-center space-x-2">
-                <Checkbox 
-                  id={`search-${column}`} 
-                  checked={getSelectedTableConfig().searchFields.includes(column)}
-                  onCheckedChange={() => toggleField(selectedTable, column, 'searchFields')}
-                />
-                <label
-                  htmlFor={`search-${column}`}
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
-                  {column}
-                </label>
-              </div>
-            ))}
-          </div>
+          <ScrollArea className="h-[200px]">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 p-1">
+              {tableColumns[selectedTable].map(column => (
+                <div key={`search-${column}`} className="flex items-center space-x-2">
+                  <Checkbox 
+                    id={`search-${column}`} 
+                    checked={getSelectedTableConfig().searchFields.includes(column)}
+                    onCheckedChange={() => toggleField(selectedTable, column, 'searchFields')}
+                  />
+                  <label
+                    htmlFor={`search-${column}`}
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  >
+                    {column}
+                  </label>
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
         </div>
         
         <Separator />
@@ -360,23 +364,25 @@ const TableSearchConfig: React.FC<TableSearchConfigProps> = ({
               </Button>
             </div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-            {tableColumns[selectedTable].map(column => (
-              <div key={`display-${column}`} className="flex items-center space-x-2">
-                <Checkbox 
-                  id={`display-${column}`} 
-                  checked={getSelectedTableConfig().displayFields.includes(column)}
-                  onCheckedChange={() => toggleField(selectedTable, column, 'displayFields')}
-                />
-                <label
-                  htmlFor={`display-${column}`}
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
-                  {column}
-                </label>
-              </div>
-            ))}
-          </div>
+          <ScrollArea className="h-[200px]">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 p-1">
+              {tableColumns[selectedTable].map(column => (
+                <div key={`display-${column}`} className="flex items-center space-x-2">
+                  <Checkbox 
+                    id={`display-${column}`} 
+                    checked={getSelectedTableConfig().displayFields.includes(column)}
+                    onCheckedChange={() => toggleField(selectedTable, column, 'displayFields')}
+                  />
+                  <label
+                    htmlFor={`display-${column}`}
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  >
+                    {column}
+                  </label>
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
         </div>
       </div>
     );
@@ -412,35 +418,37 @@ const TableSearchConfig: React.FC<TableSearchConfigProps> = ({
           Exemple: si la colonne pour la marque s'appelle "brand_name", associez-la à "brand".
         </div>
         
-        <div className="space-y-4">
-          {standardColumns.map(({ id, label }) => {
-            const tableConfig = getSelectedTableConfig();
-            const currentMapping = tableConfig.columnMapping?.[id] || '';
-            
-            return (
-              <div key={id} className="grid grid-cols-12 gap-4 items-center">
-                <Label htmlFor={`map-${id}`} className="col-span-3">
-                  {label} ({id})
-                </Label>
-                <div className="col-span-9">
-                  <select
-                    id={`map-${id}`}
-                    className="w-full rounded-md border border-input bg-background px-3 py-2"
-                    value={currentMapping}
-                    onChange={(e) => updateColumnMapping(selectedTable, id, e.target.value)}
-                  >
-                    <option value="">-- Sélectionner une colonne --</option>
-                    {tableColumns[selectedTable].map(column => (
-                      <option key={column} value={column}>
-                        {column}
-                      </option>
-                    ))}
-                  </select>
+        <ScrollArea className="h-[400px]">
+          <div className="space-y-4 p-1">
+            {standardColumns.map(({ id, label }) => {
+              const tableConfig = getSelectedTableConfig();
+              const currentMapping = tableConfig.columnMapping?.[id] || '';
+              
+              return (
+                <div key={id} className="grid grid-cols-12 gap-4 items-center">
+                  <Label htmlFor={`map-${id}`} className="col-span-3">
+                    {label} ({id})
+                  </Label>
+                  <div className="col-span-9">
+                    <select
+                      id={`map-${id}`}
+                      className="w-full rounded-md border border-input bg-background px-3 py-2"
+                      value={currentMapping}
+                      onChange={(e) => updateColumnMapping(selectedTable, id, e.target.value)}
+                    >
+                      <option value="">-- Sélectionner une colonne --</option>
+                      {tableColumns[selectedTable].map(column => (
+                        <option key={column} value={column}>
+                          {column}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        </ScrollArea>
       </div>
     );
   };
@@ -485,40 +493,50 @@ const TableSearchConfig: React.FC<TableSearchConfigProps> = ({
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {tableConfigs.map((config) => (
-                <div 
-                  key={config.name}
-                  className={`flex items-center justify-between p-3 border rounded-md hover:bg-gray-900 cursor-pointer transition-colors ${selectedTable === config.name ? 'border-blue-500 bg-blue-950/20' : ''}`}
-                  onClick={() => handleSelectTable(config.name)}
-                >
-                  <div className="flex items-center gap-3">
-                    <Switch
-                      checked={config.enabled}
-                      onCheckedChange={() => toggleTableEnabled(config.name)}
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                    <span className={config.enabled ? "font-medium" : "opacity-70"}>
-                      {config.name}
-                    </span>
-                  </div>
-                  <div className="flex gap-2 text-xs opacity-70">
-                    <span className="flex items-center">
-                      <Search className="h-3 w-3 mr-1" />
-                      {config.searchFields.length}
-                    </span>
-                    <span className="flex items-center">
-                      <Eye className="h-3 w-3 mr-1" />
-                      {config.displayFields.length}
-                    </span>
-                    <span className="flex items-center">
-                      <Layers className="h-3 w-3 mr-1" />
-                      {config.columnMapping ? Object.keys(config.columnMapping || {}).length : 0}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <ScrollArea className="h-[400px]">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-1">
+                {tableConfigs.map((config) => (
+                  <TooltipProvider key={config.name}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div 
+                          className={`flex items-center justify-between p-3 border rounded-md hover:bg-gray-900 cursor-pointer transition-colors ${selectedTable === config.name ? 'border-blue-500 bg-blue-950/20' : ''}`}
+                          onClick={() => handleSelectTable(config.name)}
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <Switch
+                              checked={config.enabled}
+                              onCheckedChange={() => toggleTableEnabled(config.name)}
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                            <span className={`${config.enabled ? "font-medium" : "opacity-70"} truncate max-w-[150px]`}>
+                              {config.name}
+                            </span>
+                          </div>
+                          <div className="flex gap-2 text-xs opacity-70 flex-shrink-0">
+                            <span className="flex items-center">
+                              <Search className="h-3 w-3 mr-1" />
+                              {config.searchFields.length}
+                            </span>
+                            <span className="flex items-center">
+                              <Eye className="h-3 w-3 mr-1" />
+                              {config.displayFields.length}
+                            </span>
+                            <span className="flex items-center">
+                              <Layers className="h-3 w-3 mr-1" />
+                              {config.columnMapping ? Object.keys(config.columnMapping || {}).length : 0}
+                            </span>
+                          </div>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{config.name}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                ))}
+              </div>
+            </ScrollArea>
           )}
         </CardContent>
       </Card>
@@ -526,7 +544,7 @@ const TableSearchConfig: React.FC<TableSearchConfigProps> = ({
       {selectedTable && (
         <Card>
           <CardHeader>
-            <CardTitle>Configuration de {selectedTable}</CardTitle>
+            <CardTitle>Configuration de <span className="font-mono text-sm bg-muted p-1 rounded">{selectedTable}</span></CardTitle>
             <CardDescription>
               Configurez cette table pour améliorer la recherche et l'affichage.
             </CardDescription>
