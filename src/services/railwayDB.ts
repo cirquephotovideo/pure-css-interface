@@ -40,6 +40,9 @@ const RAILWAY_DB_USER = "postgres";
 const RAILWAY_DB_PASSWORD = import.meta.env.VITE_RAILWAY_DB_PASSWORD || "";
 const RAILWAY_READ_ONLY_TOKEN = "dbe21f72-1f35-489b-8500-8823ebf152d5";
 
+// Debug log to check if password is defined
+console.log("Railway DB Password defined:", RAILWAY_DB_PASSWORD ? "Yes" : "No");
+
 /**
  * Execute a query on the Railway PostgreSQL database
  * @param query SQL query to execute
@@ -54,8 +57,15 @@ export async function executeRailwayQuery<T>(
     console.log("Executing Railway query:", query, "with params:", params);
     
     // Vérifier que les variables d'environnement sont définies
-    if (!RAILWAY_DB_HOST || !RAILWAY_DB_PORT || !RAILWAY_DB_NAME || !RAILWAY_DB_USER) {
-      const errorMessage = "Configuration Railway DB manquante. Vérifiez les variables d'environnement.";
+    if (!RAILWAY_DB_HOST || !RAILWAY_DB_PORT || !RAILWAY_DB_NAME || !RAILWAY_DB_USER || !RAILWAY_DB_PASSWORD) {
+      const missingVars = [];
+      if (!RAILWAY_DB_HOST) missingVars.push("RAILWAY_DB_HOST");
+      if (!RAILWAY_DB_PORT) missingVars.push("RAILWAY_DB_PORT");
+      if (!RAILWAY_DB_NAME) missingVars.push("RAILWAY_DB_NAME");
+      if (!RAILWAY_DB_USER) missingVars.push("RAILWAY_DB_USER");
+      if (!RAILWAY_DB_PASSWORD) missingVars.push("RAILWAY_DB_PASSWORD");
+      
+      const errorMessage = `Configuration Railway DB manquante: ${missingVars.join(', ')}. Vérifiez les variables d'environnement.`;
       console.error(errorMessage);
       toast.error(errorMessage);
       return { data: null, count: 0, error: errorMessage };
@@ -73,6 +83,15 @@ export async function executeRailwayQuery<T>(
         error: errorMessage
       };
     }
+    
+    // Log the DB configuration being sent (without the actual password)
+    console.log("Railway DB Config:", {
+      host: RAILWAY_DB_HOST,
+      port: RAILWAY_DB_PORT,
+      database: RAILWAY_DB_NAME,
+      user: RAILWAY_DB_USER,
+      passwordProvided: RAILWAY_DB_PASSWORD ? "Yes" : "No"
+    });
     
     // Utiliser l'edge function Supabase pour exécuter la requête PostgreSQL
     const response = await fetch("https://hspgrehyavlqiilrajor.supabase.co/functions/v1/railway-db", {

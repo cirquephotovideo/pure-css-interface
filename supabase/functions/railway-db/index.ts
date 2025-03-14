@@ -22,11 +22,27 @@ function handleCorsRequest() {
 function validateDbConfig(dbConfig) {
   const { host, port, database, user, password } = dbConfig || {};
   
+  // Log the received config for debugging (without the actual password)
+  console.log("Received DB Config:", {
+    host,
+    port,
+    database,
+    user,
+    passwordProvided: password ? "Yes" : "No"
+  });
+  
   if (!host || !port || !database || !user || !password) {
-    console.error("Missing Railway database configuration variables");
+    const missingFields = [];
+    if (!host) missingFields.push("host");
+    if (!port) missingFields.push("port");
+    if (!database) missingFields.push("database");
+    if (!user) missingFields.push("user");
+    if (!password) missingFields.push("password");
+    
+    console.error(`Missing Railway database configuration fields: ${missingFields.join(', ')}`);
     return {
       valid: false,
-      error: "Missing Railway database configuration. Please check environment variables."
+      error: `Missing Railway database configuration fields: ${missingFields.join(', ')}. Please check environment variables.`
     };
   }
   
@@ -163,6 +179,13 @@ async function handleRequest(req) {
     const requestData = await req.json();
     const { query, params, readOnly, dbConfig } = requestData;
 
+    console.log("Request received with data:", {
+      queryProvided: !!query,
+      paramsProvided: !!params,
+      readOnly,
+      dbConfigProvided: !!dbConfig
+    });
+
     // Validate database configuration
     const configValidation = validateDbConfig(dbConfig);
     if (!configValidation.valid) {
@@ -224,6 +247,11 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return handleCorsRequest();
   }
+
+  // Log headers for debugging
+  console.log("Request headers:", Array.from(req.headers.entries())
+    .filter(([key]) => !key.includes('authorization') && !key.includes('password'))
+    .reduce((obj, [key, value]) => ({ ...obj, [key]: value }), {}));
 
   return handleRequest(req);
 });
