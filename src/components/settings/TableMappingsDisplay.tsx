@@ -3,7 +3,6 @@ import React from 'react';
 import {
   Table,
   TableBody,
-  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
@@ -11,17 +10,12 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { TableConfig } from "@/types/tableConfig";
 
 interface ColumnMapping {
   standardField: string;
   tableField: string;
   standardLabel: string;
-}
-
-interface TableMappingConfig {
-  name: string;
-  enabled: boolean;
-  columnMapping: Record<string, string>;
 }
 
 interface TableMappingsDisplayProps {
@@ -44,7 +38,7 @@ const standardFields = [
 
 const TableMappingsDisplay: React.FC<TableMappingsDisplayProps> = ({ className }) => {
   // Load table configurations from localStorage
-  const [tableConfigs, setTableConfigs] = React.useState<TableMappingConfig[]>([]);
+  const [tableConfigs, setTableConfigs] = React.useState<TableConfig[]>([]);
   
   React.useEffect(() => {
     const savedTableConfigs = localStorage.getItem('railway_search_tables');

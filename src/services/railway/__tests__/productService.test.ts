@@ -1,73 +1,88 @@
 
-/**
- * Tests for Railway DB productService
- */
-import { fetchProducts, searchProducts } from "../productService";
-import { executeRailwayQuery } from "../queryService";
-import { createMockQueryResult } from "./test-utils";
-import { sampleProducts } from "./fixtures/products";
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { executeRailwayQuery } from '../queryService';
+import { searchProducts } from '../productService';
 
-// Mock the executeRailwayQuery function
-jest.mock("../queryService", () => ({
-  executeRailwayQuery: jest.fn()
+// Mock the queryService module
+vi.mock('../queryService', () => ({
+  executeRailwayQuery: vi.fn(),
 }));
 
-const mockedExecuteQuery = executeRailwayQuery as jest.MockedFunction<typeof executeRailwayQuery>;
-
-describe("Railway DB productService", () => {
+describe('productService', () => {
   beforeEach(() => {
-    mockedExecuteQuery.mockClear();
+    vi.clearAllMocks();
   });
-  
-  it("should fetch products", async () => {
-    // Setup mock return value
-    mockedExecuteQuery.mockResolvedValueOnce(createMockQueryResult(sampleProducts, null));
-    
-    const result = await fetchProducts();
-    
-    expect(result.data).toEqual(sampleProducts);
-    expect(result.count).toBe(2);
-    expect(result.error).toBeNull();
-    expect(mockedExecuteQuery).toHaveBeenCalledWith(expect.stringContaining("SELECT * FROM products"), []);
+
+  it('should return empty results when no tables are configured', async () => {
+    // No tables in localStorage
+    global.localStorage.setItem('railway_search_tables', JSON.stringify([]));
+
+    const result = await searchProducts('test query');
+
+    expect(result.results).toEqual([]);
+    expect(result.totalResults).toBe(0);
+    expect(executeRailwayQuery).not.toHaveBeenCalled();
   });
-  
-  it("should search products", async () => {
-    // Setup mock return value
-    mockedExecuteQuery.mockResolvedValueOnce(
-      createMockQueryResult([sampleProducts[0]], null)
-    );
-    
-    const searchTerm = "test";
-    const result = await searchProducts(searchTerm);
-    
-    expect(result.data).toEqual([sampleProducts[0]]);
-    expect(result.count).toBe(1);
-    expect(result.error).toBeNull();
-    expect(mockedExecuteQuery).toHaveBeenCalledWith(
-      expect.stringContaining("ILIKE $1"),
-      expect.arrayContaining([`%${searchTerm}%`])
-    );
+
+  it('should return results from all enabled tables', async () => {
+    // Mock localStorage with some enabled tables
+    global.localStorage.setItem('railway_search_tables', JSON.stringify([
+      {
+        name: 'products',
+        enabled: true,
+        searchFields: ['name', 'description'],
+        displayFields: ['name', 'price'],
+      },
+      {
+        name: 'raw_table',
+        enabled: true,
+        searchFields: ['product_name'],
+        displayFields: ['product_name', 'cost'],
+      },
+      {
+        name: 'disabled_table',
+        enabled: false,
+        searchFields: ['name'],
+        displayFields: ['name'],
+      },
+    ]));
+
+    // Mock the query execution
+    (executeRailwayQuery as any).mockResolvedValueOnce({
+      data: [{ id: 1, name: 'Test Product 1' }],
+    });
+    (executeRailwayQuery as any).mockResolvedValueOnce({
+      data: [{ id: 2, product_name: 'Test Product 2' }],
+    });
+
+    const result = await searchProducts('test');
+
+    expect(result.results.length).toBe(2);
+    expect(result.totalResults).toBe(2);
+    expect(executeRailwayQuery).toHaveBeenCalledTimes(2);
   });
-  
-  it("should handle empty search results", async () => {
-    // Setup mock return value for empty results
-    mockedExecuteQuery.mockResolvedValueOnce(createMockQueryResult([], null));
-    
-    const result = await searchProducts("nonexistent");
-    
-    expect(result.data).toEqual([]);
-    expect(result.count).toBe(0);
-    expect(result.error).toBeNull();
-  });
-  
-  it("should propagate errors from queryService", async () => {
-    // Setup mock return value for error
-    const errorMessage = "Database connection error";
-    mockedExecuteQuery.mockResolvedValueOnce(createMockQueryResult(null, errorMessage));
-    
-    const result = await fetchProducts();
-    
-    expect(result.data).toBeNull();
-    expect(result.error).toBe(errorMessage);
+
+  it('should handle errors from query execution', async () => {
+    // Mock localStorage with enabled table
+    global.localStorage.setItem('railway_search_tables', JSON.stringify([
+      {
+        name: 'products',
+        enabled: true,
+        searchFields: ['name'],
+        displayFields: ['name'],
+      },
+    ]));
+
+    // Mock query execution with error
+    (executeRailwayQuery as any).mockResolvedValueOnce({
+      error: 'Database error',
+    });
+
+    const result = await searchProducts('test');
+
+    expect(result.results).toEqual([]);
+    expect(result.totalResults).toBe(0);
+    expect(executeRailwayQuery).toHaveBeenCalledTimes(1);
+    expect(result.error).toBe('Database error');
   });
 });
