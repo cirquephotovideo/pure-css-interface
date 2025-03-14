@@ -2,6 +2,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { executeRailwayQuery } from '../queryService';
 import { searchProducts } from '../productService';
+import { SearchResult } from '../productService';
 
 // Mock the queryService module
 vi.mock('../queryService', () => ({
@@ -19,8 +20,8 @@ describe('productService', () => {
 
     const result = await searchProducts('test query');
 
-    expect(result.results).toEqual([]);
-    expect(result.totalResults).toBe(0);
+    expect(result.data).toEqual([]);
+    expect(result.data?.length || 0).toBe(0);
     expect(executeRailwayQuery).not.toHaveBeenCalled();
   });
 
@@ -57,8 +58,7 @@ describe('productService', () => {
 
     const result = await searchProducts('test');
 
-    expect(result.results.length).toBe(2);
-    expect(result.totalResults).toBe(2);
+    expect(result.data?.length || 0).toBe(2);
     expect(executeRailwayQuery).toHaveBeenCalledTimes(2);
   });
 
@@ -80,9 +80,8 @@ describe('productService', () => {
 
     const result = await searchProducts('test');
 
-    expect(result.results).toEqual([]);
-    expect(result.totalResults).toBe(0);
-    expect(executeRailwayQuery).toHaveBeenCalledTimes(1);
+    expect(result.data).toEqual(null);
     expect(result.error).toBe('Database error');
+    expect(executeRailwayQuery).toHaveBeenCalledTimes(1);
   });
 });
