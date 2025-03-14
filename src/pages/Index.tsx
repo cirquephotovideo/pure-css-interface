@@ -23,7 +23,7 @@ const Index = () => {
     staleTime: 60 * 1000, // 1 minute
     retry: 1, // Reduce retries to avoid flooding with errors
     retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 30000), // Exponential backoff
-    enabled: !initialLoad || searchQuery !== '', // Don't fetch automatically on first load
+    enabled: !initialLoad && searchQuery !== '', // Only enable query when not initial load AND search query is provided
   });
 
   // Set initialLoad to false after component mounts
@@ -60,8 +60,8 @@ const Index = () => {
     refetch();
   };
 
-  // Determine actual loading state to display to user
-  const showLoading = isLoading && !initialLoad;
+  // Determine actual loading state to display to user - only show when actively searching
+  const showLoading = isLoading && searchQuery !== '';
 
   return (
     <div className="flex w-full h-screen overflow-hidden animate-fade-in">
