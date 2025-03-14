@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
-import { Search, X, Terminal, BarcodeScan, FileText } from 'lucide-react';
+import { Search, X, Terminal, BarcodeIcon, FileText } from 'lucide-react';
 import { getLogBuffer, LogLevel } from '@/services/railway/logger';
 
 interface SearchBarProps {
@@ -23,10 +22,8 @@ const SearchBar: React.FC<SearchBarProps> = ({
   const [query, setQuery] = useState('');
   const [logs, setLogs] = useState<Array<{level: LogLevel, message: string, timestamp: string}>>([]);
   
-  // Determine if the search looks like an EAN code
   const isEanSearch = /^\d+$/.test(query);
   
-  // Poll logs every second when searching
   useEffect(() => {
     if (isLoading) {
       const interval = setInterval(() => {
@@ -35,7 +32,6 @@ const SearchBar: React.FC<SearchBarProps> = ({
       
       return () => clearInterval(interval);
     } else {
-      // Get logs once more when loading completes
       setLogs(getLogBuffer());
     }
   }, [isLoading]);
@@ -47,7 +43,6 @@ const SearchBar: React.FC<SearchBarProps> = ({
     }
   };
   
-  // Format the timestamp to be more readable
   const formatTimestamp = (timestamp: string) => {
     try {
       const date = new Date(timestamp);
@@ -72,7 +67,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
           hasError && "border border-red-300 bg-red-50/50"
         )}>
           {isEanSearch ? (
-            <BarcodeScan className="text-blue-500 h-4 w-4 mr-2" />
+            <BarcodeIcon className="text-blue-500 h-4 w-4 mr-2" />
           ) : (
             <FileText className="text-gray-500 h-4 w-4 mr-2" />
           )}
@@ -98,7 +93,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
         
         {isEanSearch && query.length > 0 && (
           <div className="text-xs text-blue-600 flex items-center gap-1">
-            <BarcodeScan className="h-3 w-3" />
+            <BarcodeIcon className="h-3 w-3" />
             Recherche exacte par code EAN/barcode
           </div>
         )}
@@ -108,7 +103,6 @@ const SearchBar: React.FC<SearchBarProps> = ({
             <Progress value={75} className="h-1" />
             <p className="text-xs text-muted-foreground mt-1 animate-pulse">Recherche en cours...</p>
             
-            {/* Log display area */}
             <div className="mt-2 bg-black/80 text-green-400 p-2 rounded font-mono text-xs h-24 overflow-y-auto">
               <div className="flex items-center mb-1 opacity-70">
                 <Terminal className="h-3 w-3 mr-1" />

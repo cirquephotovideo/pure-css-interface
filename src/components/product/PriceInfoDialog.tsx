@@ -1,4 +1,3 @@
-
 import React from 'react';
 import {
   Dialog,
@@ -10,7 +9,7 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
-  BarcodeScan, 
+  BarcodeIcon, 
   Box, 
   Building, 
   Calendar, 
@@ -121,12 +120,12 @@ const PriceInfoDialog: React.FC<PriceInfoDialogProps> = ({
                 <InfoItem 
                   label="Code-barres" 
                   value={product.barcode} 
-                  icon={<BarcodeScan className="h-4 w-4" />} 
+                  icon={<BarcodeIcon className="h-4 w-4" />} 
                 />
                 <InfoItem 
                   label="EAN" 
                   value={product.ean && product.ean !== product.barcode ? product.ean : null} 
-                  icon={<BarcodeScan className="h-4 w-4" />} 
+                  icon={<BarcodeIcon className="h-4 w-4" />} 
                 />
                 <InfoItem 
                   label="SKU" 
@@ -214,6 +213,8 @@ const PriceInfoDialog: React.FC<PriceInfoDialogProps> = ({
                 />
               </div>
             </div>
+            
+            <Separator />
             
             {/* Add any additional fields that might be present */}
             <div className="text-xs text-gray-500 mt-2 italic">

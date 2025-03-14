@@ -1,9 +1,8 @@
-
 import React, { useState } from 'react';
 import { Product } from '@/services/railway';
 import { Table, TableBody, TableCell, TableHeader, TableHead, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Info, Database, Package, BarcodeScan, TrendingUp, User } from 'lucide-react';
+import { Info, Database, Package, BarcodeIcon, TrendingUp, User } from 'lucide-react';
 import PriceInfoDialog from './PriceInfoDialog';
 
 interface ProductRowProps {
@@ -16,7 +15,6 @@ const ProductRow: React.FC<ProductRowProps> = ({ product }) => {
     setOpenInfoDialog(priceType);
   };
 
-  // Handle potentially missing data in the product object
   const prices = product.prices || [];
   const eco = product.eco || {};
   
@@ -73,7 +71,6 @@ const ProductRow: React.FC<ProductRowProps> = ({ product }) => {
         </Table>
       </div>
       
-      {/* Price Info Dialog */}
       {prices.map((price, index) => (
         <PriceInfoDialog 
           key={index}
@@ -109,14 +106,14 @@ const ProductRow: React.FC<ProductRowProps> = ({ product }) => {
           <div className="flex gap-2 flex-wrap text-xs opacity-70 mb-1">
             {product.barcode && (
               <span className="flex items-center gap-1">
-                <BarcodeScan className="h-3 w-3" />
+                <BarcodeIcon className="h-3 w-3" />
                 {product.barcode}
               </span>
             )}
             
             {product.ean && product.ean !== product.barcode && (
               <span className="flex items-center gap-1">
-                <BarcodeScan className="h-3 w-3" />
+                <BarcodeIcon className="h-3 w-3" />
                 EAN: {product.ean}
               </span>
             )}
