@@ -1,9 +1,9 @@
-
 import { useState } from 'react'
 import './App.css'
 import Sidebar from './components/Sidebar'
 import ProductDisplay from './components/product/ProductDisplay'
 import Settings from './pages/Settings'
+import Catalogs from './pages/Catalogs'
 import { Toaster } from './components/ui/sonner'
 
 function App() {
@@ -20,8 +20,9 @@ function App() {
       <main className="flex-1 overflow-auto p-3">
         {currentPage === 'products' && <ProductDisplay />}
         {currentPage === 'settings' && <Settings />}
+        {currentPage === 'catalogs' && <Catalogs />}
         {/* Other pages will be added here later */}
-        {['catalogs', 'brands', 'activities'].includes(currentPage) && (
+        {['brands', 'activities'].includes(currentPage) && (
           <div className="h-full flex items-center justify-center">
             <div className="ios-glass p-8 rounded-2xl text-center">
               <h2 className="text-2xl font-medium mb-4">Page {currentPage} en cours de développement</h2>
