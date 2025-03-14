@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 
 const Index = () => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [initialLoad, setInitialLoad] = useState(true);
   
   // Fetch products based on search query or get all products
   const { data: productsData, isLoading, error, isError, refetch } = useQuery({
@@ -22,7 +23,13 @@ const Index = () => {
     staleTime: 60 * 1000, // 1 minute
     retry: 1, // Reduce retries to avoid flooding with errors
     retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 30000), // Exponential backoff
+    enabled: !initialLoad || searchQuery !== '', // Don't fetch automatically on first load
   });
+
+  // Set initialLoad to false after component mounts
+  useEffect(() => {
+    setInitialLoad(false);
+  }, []);
 
   // Get products from the query result or use empty array
   const products: Product[] = productsData?.data || [];
@@ -52,6 +59,9 @@ const Index = () => {
     toast.info("Tentative de reconnexion à la base de données...");
     refetch();
   };
+
+  // Determine actual loading state to display to user
+  const showLoading = isLoading && !initialLoad;
 
   return (
     <div className="flex w-full h-screen overflow-hidden animate-fade-in">
@@ -85,13 +95,13 @@ const Index = () => {
             <div className="ios-glass p-6 rounded-[20px] mb-6 animate-slide-in">
               <SearchBar 
                 onSearch={handleSearch}
-                isLoading={isLoading}
+                isLoading={showLoading}
                 hasError={isError || !!productsData?.error}
               />
             </div>
             
             <div className="ios-glass p-6 rounded-[20px] mb-6 animate-scale-in">
-              {isLoading ? (
+              {showLoading ? (
                 <div className="flex justify-center p-12">
                   <div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div>
                 </div>
@@ -116,11 +126,13 @@ const Index = () => {
                 </div>
               ) : products.length > 0 ? (
                 <ProductDisplay products={products} />
+              ) : searchQuery ? (
+                <div className="text-center p-8 opacity-70">
+                  Aucun produit trouvé pour "{searchQuery}". Essayez une autre recherche.
+                </div>
               ) : (
                 <div className="text-center p-8 opacity-70">
-                  {searchQuery ? 
-                    `Aucun produit trouvé pour "${searchQuery}". Essayez une autre recherche.` : 
-                    "Aucun produit disponible. Vérifiez la connexion à la base de données."}
+                  Pour afficher des produits, veuillez effectuer une recherche.
                 </div>
               )}
             </div>
