@@ -80,32 +80,32 @@ const ProductRow: React.FC<{ product: Product }> = ({ product }) => {
             </DialogHeader>
             <div className="space-y-4 py-3">
               <div className="grid grid-cols-2 gap-2">
-                <div className="ios-surface p-3 rounded-lg">
+                <div className="bg-white p-3 rounded-md shadow-sm">
                   <p className="text-xs opacity-70">Référence</p>
                   <p className="font-medium">{product.reference}</p>
                 </div>
-                <div className="ios-surface p-3 rounded-lg">
+                <div className="bg-white p-3 rounded-md shadow-sm">
                   <p className="text-xs opacity-70">Catalogue</p>
                   <p className="font-medium">{price.type}</p>
                 </div>
-                <div className="ios-surface p-3 rounded-lg">
+                <div className="bg-white p-3 rounded-md shadow-sm">
                   <p className="text-xs opacity-70">Prix d'achat HT</p>
                   <p className="font-medium">{price.value.toFixed(2)} €</p>
                 </div>
-                <div className="ios-surface p-3 rounded-lg">
+                <div className="bg-white p-3 rounded-md shadow-sm">
                   <p className="text-xs opacity-70">Eco-participation</p>
                   <p className="font-medium">{product.eco && product.eco[price.type] ? product.eco[price.type].toFixed(2) : '0.00'} €</p>
                 </div>
-                <div className="ios-surface p-3 rounded-lg">
+                <div className="bg-white p-3 rounded-md shadow-sm">
                   <p className="text-xs opacity-70">Marque</p>
                   <p className="font-medium">{product.brand}</p>
                 </div>
-                <div className="ios-surface p-3 rounded-lg">
+                <div className="bg-white p-3 rounded-md shadow-sm">
                   <p className="text-xs opacity-70">Emplacement</p>
                   <p className="font-medium">{product.location}</p>
                 </div>
               </div>
-              <div className="ios-surface p-3 rounded-lg">
+              <div className="bg-white p-3 rounded-md shadow-sm">
                 <p className="text-xs opacity-70">Description</p>
                 <p className="text-sm">{product.description}</p>
               </div>
