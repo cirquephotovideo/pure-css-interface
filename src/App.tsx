@@ -1,7 +1,8 @@
+
 import { useState } from 'react'
 import './App.css'
 import Sidebar from './components/Sidebar'
-import ProductDisplay from './components/ProductDisplay'
+import ProductDisplay from './components/product/ProductDisplay'
 import Settings from './pages/Settings'
 import { Toaster } from './components/ui/sonner'
 

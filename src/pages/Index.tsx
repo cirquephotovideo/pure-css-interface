@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Sidebar from '@/components/Sidebar';
 import SearchBar from '@/components/SearchBar';
-import ProductDisplay from '@/components/ProductDisplay';
+import ProductDisplay from '@/components/product/ProductDisplay';
 import { fetchProducts, searchProducts, Product } from '@/services/railway';
 import { toast } from 'sonner';
 
