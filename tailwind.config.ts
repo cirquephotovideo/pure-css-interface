@@ -20,7 +20,7 @@ export default {
 		},
 		extend: {
 			fontFamily: {
-				sans: ['SF Pro Display', 'Inter', 'system-ui', 'sans-serif'],
+				sans: ['-apple-system', 'BlinkMacSystemFont', 'SF Pro Display', 'Inter', 'system-ui', 'sans-serif'],
 				mono: ['SF Mono', 'monospace'],
 			},
 			colors: {
@@ -66,6 +66,11 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				ios: {
+					blue: 'hsl(var(--ios-blue))',
+					green: 'hsl(var(--ios-green))',
+					orange: 'hsl(var(--ios-orange))'
 				}
 			},
 			borderRadius: {

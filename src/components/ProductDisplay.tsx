@@ -24,15 +24,15 @@ interface ProductDisplayProps {
 
 const ProductRow: React.FC<{ product: Product }> = ({ product }) => {
   return (
-    <div className="flex items-center gap-4 py-4 border-t border-border/60 animate-fade-in">
+    <div className="ios-glass flex items-center gap-4 p-4 mb-4 animate-fade-in">
       <div className="w-10 flex-shrink-0">
-        <div className="flex items-center justify-center w-6 h-6 text-xs text-muted-foreground">
+        <div className="flex items-center justify-center w-6 h-6 text-xs opacity-70">
           ❤
         </div>
       </div>
       
       <div className="flex gap-4 items-center flex-1">
-        <div className="w-20 h-16 bg-accent/50 rounded flex items-center justify-center flex-shrink-0">
+        <div className="w-20 h-16 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
           <img 
             src={product.imageUrl || "public/placeholder.svg"} 
             alt={product.reference}
@@ -44,7 +44,7 @@ const ProductRow: React.FC<{ product: Product }> = ({ product }) => {
           <div className="flex items-center gap-1">
             <span className="text-sm font-medium">{product.reference}</span>
           </div>
-          <div className="text-xs text-muted-foreground mb-1">◼ {product.barcode}</div>
+          <div className="text-xs opacity-70 mb-1">◼ {product.barcode}</div>
           <div className="text-sm leading-tight">{product.description}</div>
         </div>
         
@@ -53,7 +53,7 @@ const ProductRow: React.FC<{ product: Product }> = ({ product }) => {
             <div className="flex items-center gap-1">
               <span className="text-sm font-semibold">{product.brand}</span>
             </div>
-            <div className="text-xs text-muted-foreground">{product.location}</div>
+            <div className="text-xs opacity-70">{product.location}</div>
           </div>
         </div>
       </div>
@@ -62,14 +62,14 @@ const ProductRow: React.FC<{ product: Product }> = ({ product }) => {
         {product.prices.map((price, index) => (
           <div 
             key={index} 
-            className="flex flex-col text-center w-24 border border-border rounded py-1 px-2"
+            className="flex flex-col text-center w-24 bg-white/20 rounded-xl py-1 px-2"
           >
-            <span className="text-xs text-muted-foreground">{price.type}</span>
+            <span className="text-xs opacity-70">{price.type}</span>
             <span className="font-medium">{price.value.toFixed(2)}</span>
           </div>
         ))}
         
-        <div className="flex items-center justify-center w-10 h-10 text-muted-foreground">
+        <div className="flex items-center justify-center w-10 h-10 opacity-70">
           ⊙
         </div>
       </div>
@@ -79,27 +79,27 @@ const ProductRow: React.FC<{ product: Product }> = ({ product }) => {
 
 const ProductDisplay: React.FC<ProductDisplayProps> = ({ products, className }) => {
   return (
-    <div className={cn("w-full space-y-2", className)}>
+    <div className={cn("w-full space-y-4", className)}>
       <div className="flex justify-between items-center">
         <div className="flex gap-4 text-sm">
-          <div className="font-medium text-primary">Catalogue</div>
-          <div className="text-muted-foreground">Stock</div>
-          <div className="text-muted-foreground">PA HT</div>
-          <div className="text-muted-foreground">Eco ...</div>
+          <div className="ios-surface px-3 py-1 text-sm font-medium">Catalogue</div>
+          <div className="opacity-70 px-3 py-1 text-sm">Stock</div>
+          <div className="opacity-70 px-3 py-1 text-sm">PA HT</div>
+          <div className="opacity-70 px-3 py-1 text-sm">Eco ...</div>
         </div>
         
-        <button className="text-sm text-primary px-4 py-1 rounded-md border border-border/80 hover:bg-accent/50 transition-all">
+        <button className="ios-button text-sm">
           Voir stock et prix (3)
         </button>
       </div>
       
-      <div className="space-y-1">
+      <div className="space-y-4">
         {products.map((product) => (
           <ProductRow key={product.id} product={product} />
         ))}
       </div>
       
-      <div className="text-sm text-muted-foreground py-4">
+      <div className="text-sm opacity-70 py-4 text-center">
         1 sur 2
       </div>
     </div>

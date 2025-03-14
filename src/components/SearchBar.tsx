@@ -24,27 +24,35 @@ const SearchBar: React.FC<SearchBarProps> = ({ className, onSearch }) => {
         </p>
       </div>
       
-      <form onSubmit={handleSubmit} className="flex gap-2">
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="tq77s95d"
-          className="flex-1 px-4 py-2 text-base border border-border rounded-md focus:outline-none focus-ring transition-all bg-background"
-        />
-        <button
-          type="submit"
-          className="px-6 py-2 bg-background border border-border rounded-md hover:bg-accent transition-all text-primary font-medium"
-        >
-          Rechercher
-        </button>
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <div className="ios-surface flex items-center px-3 py-2">
+          <span className="text-gray-500 mr-2">🔍</span>
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="tq77s95d"
+            className="flex-1 px-2 py-1 text-base border-none bg-transparent focus:outline-none"
+          />
+          <span className="text-gray-500 ml-2">🎤</span>
+        </div>
+        
+        <div className="flex justify-between">
+          <button
+            type="button"
+            className="ios-button text-sm"
+          >
+            Options ...
+          </button>
+          
+          <button
+            type="submit"
+            className="ios-button text-sm"
+          >
+            Rechercher
+          </button>
+        </div>
       </form>
-      
-      <div className="flex">
-        <button className="text-sm text-muted-foreground hover:text-primary transition-colors">
-          Options ...
-        </button>
-      </div>
     </div>
   );
 };

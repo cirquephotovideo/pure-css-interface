@@ -48,45 +48,45 @@ const Index = () => {
   };
   
   return (
-    <div className="flex w-full h-screen overflow-hidden bg-background animate-fade-in">
+    <div className="flex w-full h-screen overflow-hidden animate-fade-in">
       <Sidebar />
       
       <main className="flex-1 flex flex-col h-screen overflow-hidden">
-        <header className="border-b border-border/60 py-4 px-6 flex justify-between items-center">
+        <header className="ios-glass py-4 px-6 flex justify-between items-center mb-4 m-2 rounded-xl">
           <div className="flex items-center gap-4">
-            <button className="p-2 text-muted-foreground hover:text-primary transition-colors">
+            <button className="p-2 opacity-70 hover:opacity-100 transition-opacity">
               ≡
             </button>
             <h2 className="font-medium">Planète Technologie</h2>
           </div>
           
-          <button className="p-2 text-muted-foreground hover:text-primary transition-colors">
+          <button className="p-2 opacity-70 hover:opacity-100 transition-opacity">
             ⚙
           </button>
         </header>
         
-        <div className="flex-1 overflow-auto">
-          <div className="max-w-6xl mx-auto px-6 py-6">
-            <nav className="flex gap-6 border-b border-border/60 text-sm">
-              <div className="px-2 py-3 text-primary font-medium border-b-2 border-primary">
+        <div className="flex-1 overflow-auto px-2">
+          <div className="max-w-6xl mx-auto">
+            <nav className="flex ios-glass p-1 rounded-full mb-6">
+              <div className="px-5 py-2 text-sm font-medium rounded-full bg-white/30">
                 Recherche
               </div>
-              <div className="px-2 py-3 text-muted-foreground hover:text-primary transition-colors">
+              <div className="px-5 py-2 text-sm opacity-70 hover:opacity-100 transition-opacity">
                 Tableau de bord
               </div>
             </nav>
             
-            <div className="py-6 animate-slide-in">
+            <div className="ios-glass p-6 rounded-[20px] mb-6 animate-slide-in">
               <SearchBar onSearch={handleSearch} />
             </div>
             
-            <div className="mt-6 animate-scale-in">
+            <div className="ios-glass p-6 rounded-[20px] mb-6 animate-scale-in">
               <ProductDisplay products={products} />
             </div>
           </div>
         </div>
         
-        <footer className="px-6 py-2 border-t border-border/60 text-xs text-muted-foreground flex justify-between items-center">
+        <footer className="ios-glass p-4 mb-2 mx-2 rounded-xl text-xs opacity-70 flex justify-between items-center">
           <div>12/03/2023, 16:16</div>
           <div>http://hive-ui.pl01.colbee.club:8080/</div>
         </footer>

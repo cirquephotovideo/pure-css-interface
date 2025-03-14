@@ -5,7 +5,7 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
+    --background: 135deg, #a1c4fd 0%, #fbc2eb 100%;
     --foreground: 240 10% 3.9%;
     
     --card: 0 0% 100%;
@@ -33,7 +33,7 @@
     --input: 240 5.9% 90%;
     --ring: 240 5.9% 10%;
     
-    --radius: 0.5rem;
+    --radius: 1.5rem;
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -43,6 +43,10 @@
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+    
+    --ios-blue: 211 100% 50%;
+    --ios-green: 142 70% 49%;
+    --ios-orange: 28 100% 50%;
   }
   
   * {
@@ -53,7 +57,8 @@
   }
   
   body {
-    @apply bg-background text-foreground font-sans antialiased;
+    background: linear-gradient(var(--background));
+    @apply font-sans antialiased text-foreground min-h-screen;
   }
   
   ::selection {
@@ -68,18 +73,51 @@
     transition-duration: 150ms;
   }
   
-  .glass-effect {
-    background: rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+  .ios-glass {
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border-radius: var(--radius);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
   }
   
-  .subtle-shadow {
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.1);
+  .ios-surface {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 999px;
   }
   
   .focus-ring {
     @apply outline-none ring-2 ring-primary/20 ring-offset-2 ring-offset-background;
+  }
+  
+  .ios-switch {
+    @apply relative inline-block w-12 h-7;
+  }
+  
+  .ios-switch input {
+    @apply hidden;
+  }
+  
+  .ios-slider {
+    @apply absolute inset-0 bg-gray-300 rounded-full cursor-pointer transition-all duration-300;
+  }
+  
+  .ios-slider:before {
+    content: "";
+    @apply absolute w-5 h-5 left-1 bottom-1 bg-white rounded-full transition-all duration-300;
+  }
+  
+  .ios-switch input:checked + .ios-slider {
+    @apply bg-[#34C759];
+  }
+  
+  .ios-switch input:checked + .ios-slider:before {
+    transform: translateX(18px);
+  }
+  
+  .ios-button {
+    @apply bg-white/70 backdrop-blur-md shadow-sm rounded-xl px-4 py-2 font-medium 
+    transition-all hover:bg-white/90 active:scale-95 inline-flex items-center justify-center;
   }
 }
 
