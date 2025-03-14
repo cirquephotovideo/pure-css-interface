@@ -1,7 +1,9 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableHeader, TableHead, TableRow } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Info } from 'lucide-react';
 
 interface Product {
   id: string;
@@ -27,6 +29,12 @@ interface ProductDisplayProps {
 }
 
 const ProductRow: React.FC<{ product: Product }> = ({ product }) => {
+  const [openInfoDialog, setOpenInfoDialog] = useState<string | null>(null);
+  
+  const handleOpenDialog = (priceType: string) => {
+    setOpenInfoDialog(priceType);
+  };
+
   return (
     <div className="ios-glass flex items-center gap-4 p-4 mb-4 animate-fade-in">
       <div className="w-[340px] flex-shrink-0 mr-3">
@@ -49,12 +57,62 @@ const ProductRow: React.FC<{ product: Product }> = ({ product }) => {
                 <TableCell className="py-1 px-2">
                   {product.eco && product.eco[price.type] ? product.eco[price.type].toFixed(2) : ''}
                 </TableCell>
-                <TableCell className="py-1 px-2 text-center">⊙</TableCell>
+                <TableCell className="py-1 px-2 text-center">
+                  <button 
+                    onClick={() => handleOpenDialog(price.type)}
+                    className="cursor-pointer hover:bg-white/20 rounded-full p-1 transition-colors"
+                  >
+                    <Info className="h-3 w-3" />
+                  </button>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </div>
+      
+      {/* Price Info Dialog */}
+      {product.prices.map((price, index) => (
+        <Dialog key={index} open={openInfoDialog === price.type} onOpenChange={() => setOpenInfoDialog(null)}>
+          <DialogContent className="ios-glass max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-center">Détails du Prix - {price.type}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-3">
+              <div className="grid grid-cols-2 gap-2">
+                <div className="ios-surface p-3 rounded-lg">
+                  <p className="text-xs opacity-70">Référence</p>
+                  <p className="font-medium">{product.reference}</p>
+                </div>
+                <div className="ios-surface p-3 rounded-lg">
+                  <p className="text-xs opacity-70">Catalogue</p>
+                  <p className="font-medium">{price.type}</p>
+                </div>
+                <div className="ios-surface p-3 rounded-lg">
+                  <p className="text-xs opacity-70">Prix d'achat HT</p>
+                  <p className="font-medium">{price.value.toFixed(2)} €</p>
+                </div>
+                <div className="ios-surface p-3 rounded-lg">
+                  <p className="text-xs opacity-70">Eco-participation</p>
+                  <p className="font-medium">{product.eco && product.eco[price.type] ? product.eco[price.type].toFixed(2) : '0.00'} €</p>
+                </div>
+                <div className="ios-surface p-3 rounded-lg">
+                  <p className="text-xs opacity-70">Marque</p>
+                  <p className="font-medium">{product.brand}</p>
+                </div>
+                <div className="ios-surface p-3 rounded-lg">
+                  <p className="text-xs opacity-70">Emplacement</p>
+                  <p className="font-medium">{product.location}</p>
+                </div>
+              </div>
+              <div className="ios-surface p-3 rounded-lg">
+                <p className="text-xs opacity-70">Description</p>
+                <p className="text-sm">{product.description}</p>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      ))}
       
       <div className="w-10 flex-shrink-0">
         <div className="flex items-center justify-center w-6 h-6 text-xs opacity-70">
