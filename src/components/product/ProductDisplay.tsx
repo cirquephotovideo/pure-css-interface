@@ -20,6 +20,7 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedTable, setSelectedTable] = useState<string | null>(null);
   
   // Load initial products if none are provided
   useEffect(() => {
@@ -53,6 +54,7 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
   // Handle search
   const handleSearch = async (query: string) => {
     setSearchTerm(query);
+    setSelectedTable(null);
     
     if (!query.trim()) {
       // If search is cleared, load initial products
@@ -80,6 +82,35 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
     }
   };
 
+  // Group products by barcode or supplier_code
+  const groupProducts = (products: Product[]) => {
+    const groupedMap = new Map<string, Product[]>();
+    
+    products.forEach(product => {
+      // Use barcode, ean, or supplier_code as grouping key
+      const groupKey = product.barcode || product.ean || product.supplier_code || product.id + product.source_table;
+      
+      if (groupKey) {
+        if (!groupedMap.has(groupKey)) {
+          groupedMap.set(groupKey, []);
+        }
+        groupedMap.get(groupKey)?.push(product);
+      }
+    });
+    
+    // Convert map to array, sorted by group size (largest first)
+    return Array.from(groupedMap.values())
+      .sort((a, b) => b.length - a.length);
+  };
+
+  // Filter products by selected table if needed
+  const filteredProducts = selectedTable 
+    ? products.filter(p => p.source_table === selectedTable)
+    : products;
+  
+  // Group products with same barcode/supplier code
+  const groupedProducts = groupProducts(filteredProducts);
+  
   // Count unique source tables
   const sourceTables = new Set(products.map(product => product.source_table || 'products'));
   
@@ -111,12 +142,27 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
               </button>
             </div>
             
-            {sourceTables.size > 1 && (
+            {sourceTables.size > 1 && !selectedTable && (
               <div className="flex gap-2 items-center bg-blue-950/30 p-2 rounded-lg text-sm">
                 <Database className="h-4 w-4 text-blue-500" />
                 <span>
                   Résultats de {sourceTables.size} tables: {Array.from(sourceTables).join(', ')}
                 </span>
+              </div>
+            )}
+            
+            {selectedTable && (
+              <div className="flex gap-2 items-center bg-blue-500/20 p-2 rounded-lg text-sm">
+                <Database className="h-4 w-4 text-blue-500" />
+                <span>
+                  Filtre actif: {selectedTable}
+                </span>
+                <button 
+                  className="ml-auto bg-blue-500/30 hover:bg-blue-500/50 px-2 py-0.5 rounded text-xs"
+                  onClick={() => setSelectedTable(null)}
+                >
+                  Voir tous
+                </button>
               </div>
             )}
             
@@ -127,20 +173,24 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
             )}
             
             <div className="space-y-4">
-              {products.map(product => 
-                <ProductRow key={`${product.source_table}-${product.id}`} product={product} />
+              {groupedProducts.map((group, idx) => 
+                <ProductRow 
+                  key={`group-${idx}`} 
+                  productGroup={group} 
+                  onSelectTable={setSelectedTable} 
+                />
               )}
               
-              {products.length === 0 && !loading && (
+              {groupedProducts.length === 0 && !loading && (
                 <div className="text-center py-12 opacity-70">
                   {searchTerm ? 'Aucun résultat pour cette recherche' : 'Aucun produit disponible'}
                 </div>
               )}
             </div>
             
-            {products.length > 0 && (
+            {groupedProducts.length > 0 && (
               <div className="text-sm opacity-70 py-4 text-center">
-                1 sur {Math.ceil(products.length / 10)}
+                1 sur {Math.ceil(groupedProducts.length / 10)}
               </div>
             )}
           </>
