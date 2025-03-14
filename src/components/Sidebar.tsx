@@ -6,15 +6,17 @@ interface SidebarItemProps {
   icon: string;
   label: string;
   active?: boolean;
+  onClick?: () => void;
 }
 
-const SidebarItem: React.FC<SidebarItemProps> = ({ icon, label, active }) => {
+const SidebarItem: React.FC<SidebarItemProps> = ({ icon, label, active, onClick }) => {
   return (
     <div 
       className={cn(
         "flex items-center gap-3 px-4 py-3 rounded-full transition-all cursor-pointer",
         active ? "bg-white/30 backdrop-blur-md font-medium" : "text-foreground/70 hover:bg-white/20"
       )}
+      onClick={onClick}
     >
       <div className="text-[20px]">{icon}</div>
       <span>{label}</span>
@@ -24,9 +26,17 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ icon, label, active }) => {
 
 interface SidebarProps {
   className?: string;
+  onNavigate?: (page: string) => void;
+  activePage?: string;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ className }) => {
+const Sidebar: React.FC<SidebarProps> = ({ className, onNavigate, activePage = 'products' }) => {
+  const handleNavigation = (page: string) => {
+    if (onNavigate) {
+      onNavigate(page);
+    }
+  };
+
   return (
     <aside className={cn("w-64 border-r border-white/20 h-screen flex flex-col ios-glass", className)}>
       <div className="p-6">
@@ -38,10 +48,36 @@ const Sidebar: React.FC<SidebarProps> = ({ className }) => {
       </div>
       
       <nav className="mt-2 flex flex-col gap-2 px-4">
-        <SidebarItem icon="📦" label="Produits" active />
-        <SidebarItem icon="📑" label="Catalogues" />
-        <SidebarItem icon="🏷️" label="Marques" />
-        <SidebarItem icon="📊" label="Activités" />
+        <SidebarItem 
+          icon="📦" 
+          label="Produits" 
+          active={activePage === 'products'} 
+          onClick={() => handleNavigation('products')}
+        />
+        <SidebarItem 
+          icon="📑" 
+          label="Catalogues" 
+          active={activePage === 'catalogs'}
+          onClick={() => handleNavigation('catalogs')}
+        />
+        <SidebarItem 
+          icon="🏷️" 
+          label="Marques" 
+          active={activePage === 'brands'}
+          onClick={() => handleNavigation('brands')}
+        />
+        <SidebarItem 
+          icon="📊" 
+          label="Activités" 
+          active={activePage === 'activities'}
+          onClick={() => handleNavigation('activities')}
+        />
+        <SidebarItem 
+          icon="⚙️" 
+          label="Paramètres" 
+          active={activePage === 'settings'}
+          onClick={() => handleNavigation('settings')}
+        />
       </nav>
       
       <div className="px-4 py-3 mt-auto">
@@ -57,7 +93,7 @@ const Sidebar: React.FC<SidebarProps> = ({ className }) => {
           <div className="flex items-center justify-between">
             <span>Notifications</span>
             <label className="ios-switch">
-              <input type="checkbox" checked />
+              <input type="checkbox" defaultChecked />
               <span className="ios-slider"></span>
             </label>
           </div>

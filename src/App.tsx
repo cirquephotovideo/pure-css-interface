@@ -1,27 +1,37 @@
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
+import { useState } from 'react'
+import './App.css'
+import Sidebar from './components/Sidebar'
+import ProductDisplay from './components/ProductDisplay'
+import Settings from './pages/Settings'
+import { Toaster } from './components/ui/sonner'
 
-const queryClient = new QueryClient();
+function App() {
+  const [currentPage, setCurrentPage] = useState('products');
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
+  const handleNavigation = (page: string) => {
+    setCurrentPage(page);
+  };
+
+  return (
+    <div className="flex h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-white">
+      <Sidebar onNavigate={handleNavigation} activePage={currentPage} />
+      
+      <main className="flex-1 overflow-auto">
+        {currentPage === 'products' && <ProductDisplay />}
+        {currentPage === 'settings' && <Settings />}
+        {/* Other pages will be added here later */}
+        {['catalogs', 'brands', 'activities'].includes(currentPage) && (
+          <div className="h-full flex items-center justify-center">
+            <div className="text-center">
+              <h2 className="text-2xl font-medium mb-4">Page {currentPage} en cours de développement</h2>
+              <p className="text-gray-400">Cette fonctionnalité sera disponible prochainement.</p>
+            </div>
+          </div>
+        )}
+      </main>
       <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+    </div>
+  )
+}
 
-export default App;
+export default App
