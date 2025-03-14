@@ -37,7 +37,7 @@ const RAILWAY_DB_PORT = import.meta.env.VITE_RAILWAY_DB_PORT;
 const RAILWAY_DB_NAME = import.meta.env.VITE_RAILWAY_DB_NAME;
 const RAILWAY_DB_USER = import.meta.env.VITE_RAILWAY_DB_USER;
 const RAILWAY_DB_PASSWORD = import.meta.env.VITE_RAILWAY_DB_PASSWORD;
-const RAILWAY_READ_ONLY_TOKEN = import.meta.env.VITE_RAILWAY_READ_ONLY_TOKEN;
+const RAILWAY_READ_ONLY_TOKEN = "dbe21f72-1f35-489b-8500-8823ebf152d5";
 
 /**
  * Execute a query on the Railway PostgreSQL database

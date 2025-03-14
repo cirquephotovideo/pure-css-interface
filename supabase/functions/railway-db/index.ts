@@ -6,7 +6,7 @@ import { Client } from "https://deno.land/x/postgres@v0.17.0/mod.ts";
 // CORS headers for browser requests
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-railway-token',
 };
 
 serve(async (req) => {
@@ -38,10 +38,27 @@ serve(async (req) => {
       );
     }
 
+    // Get Railway token from request headers
+    const railwayToken = req.headers.get('x-railway-token');
+    if (!railwayToken) {
+      console.error("No Railway token provided");
+      return new Response(
+        JSON.stringify({ 
+          data: null, 
+          count: 0, 
+          error: "No Railway token provided. Please provide a valid token." 
+        }),
+        { 
+          status: 401, 
+          headers: { ...corsHeaders, "Content-Type": "application/json" } 
+        }
+      );
+    }
+
     console.log(`Attempting connection to Railway DB at ${RAILWAY_DB_HOST}:${RAILWAY_DB_PORT}/${RAILWAY_DB_NAME}`);
 
     // Parse the request body for the query
-    const { query, params } = await req.json();
+    const { query, params, readOnly } = await req.json();
 
     if (!query) {
       console.error("No SQL query provided in request");
@@ -52,6 +69,25 @@ serve(async (req) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" } 
         }
       );
+    }
+
+    // Check if the query is read-only
+    if (readOnly) {
+      const upperQuery = query.trim().toUpperCase();
+      if (!upperQuery.startsWith('SELECT')) {
+        console.error("Write operation detected with read-only token");
+        return new Response(
+          JSON.stringify({ 
+            data: null, 
+            count: 0, 
+            error: "The token provided is read-only, but a write operation was detected." 
+          }),
+          { 
+            status: 403, 
+            headers: { ...corsHeaders, "Content-Type": "application/json" } 
+          }
+        );
+      }
     }
 
     console.log(`Executing query: ${query.substring(0, 100)}... with params: ${JSON.stringify(params || [])}`);
