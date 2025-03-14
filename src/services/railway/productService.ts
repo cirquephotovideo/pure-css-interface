@@ -216,11 +216,11 @@ export async function searchProducts(term: string): Promise<QueryResult<Product>
           // Use column mapping from table config if available
           if (tableConfig && tableConfig.columnMapping && Object.keys(tableConfig.columnMapping).length > 0) {
             // Build select query using explicit column mapping
-            const selectFields = standardColumns.map(({ id }) => {
-              const mappedColumn = columnMapping[id];
+            const selectFields = standardColumns.map((columnId) => {
+              const mappedColumn = columnMapping[columnId];
               return mappedColumn 
-                ? `${mappedColumn} AS ${id}` 
-                : `NULL AS ${id}`;
+                ? `${mappedColumn} AS ${columnId}` 
+                : `NULL AS ${columnId}`;
             }).join(', ');
             
             tableQueries.push(`
@@ -334,4 +334,16 @@ export async function searchProducts(term: string): Promise<QueryResult<Product>
 }
 
 // Helper array of standard column IDs
-const standardColumns = ['id', 'reference', 'barcode', 'description', 'brand', 'supplier_code', 'name', 'price', 'stock', 'location', 'ean'];
+const standardColumns = [
+  'id', 
+  'reference', 
+  'barcode', 
+  'description', 
+  'brand', 
+  'supplier_code', 
+  'name', 
+  'price', 
+  'stock', 
+  'location', 
+  'ean'
+];
