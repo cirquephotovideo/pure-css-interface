@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { executeRailwayQuery } from "@/services/railway/queryService";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Loader2, Database, Search, Eye } from 'lucide-react';
 
 // Interface for table configuration
 interface TableConfig {
@@ -34,52 +35,70 @@ const TableSearchConfig: React.FC<TableSearchConfigProps> = ({
   const [selectedTable, setSelectedTable] = useState<string | null>(null);
   const [tableColumns, setTableColumns] = useState<Record<string, string[]>>({});
   const [fetchingColumns, setFetchingColumns] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   
   // Fetch all raw_ tables from the database
-  useEffect(() => {
-    const fetchTables = async () => {
-      try {
-        setLoading(true);
-        const query = `
-          SELECT table_name 
-          FROM information_schema.tables 
-          WHERE table_schema = 'public' 
-          AND (table_name LIKE 'raw_%' OR table_name = 'products')
-          ORDER BY table_name
-        `;
+  const fetchTables = async () => {
+    try {
+      setLoading(true);
+      const query = `
+        SELECT table_name 
+        FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND (table_name LIKE 'raw_%' OR table_name = 'products')
+        ORDER BY table_name
+      `;
+      
+      const result = await executeRailwayQuery<{table_name: string}>(query);
+      
+      if (result.data) {
+        const tables = result.data.map(row => row.table_name);
+        setRawTables(tables);
         
-        const result = await executeRailwayQuery<{table_name: string}>(query);
+        // Initialize configs for tables that don't have one yet
+        const existingTableNames = tableConfigs.map(config => config.name);
+        const newTables = tables.filter(table => !existingTableNames.includes(table));
         
-        if (result.data) {
-          const tables = result.data.map(row => row.table_name);
-          setRawTables(tables);
-          
-          // Initialize configs for tables that don't have one yet
-          const existingTableNames = tableConfigs.map(config => config.name);
-          const newTables = tables.filter(table => !existingTableNames.includes(table));
-          
-          if (newTables.length > 0) {
-            const newConfigs = [
-              ...tableConfigs,
-              ...newTables.map(table => ({
-                name: table,
-                enabled: false,
-                searchFields: [],
-                displayFields: []
-              }))
-            ];
-            setTableConfigs(newConfigs);
-            if (onChange) onChange(newConfigs);
-          }
+        if (newTables.length > 0) {
+          const newConfigs = [
+            ...tableConfigs,
+            ...newTables.map(table => ({
+              name: table,
+              enabled: false,
+              searchFields: [],
+              displayFields: []
+            }))
+          ];
+          setTableConfigs(newConfigs);
+          if (onChange) onChange(newConfigs);
         }
-      } catch (error) {
-        console.error("Error fetching tables:", error);
-        toast.error("Impossible de récupérer la liste des tables");
-      } finally {
-        setLoading(false);
+        
+        toast.success(`${tables.length} tables trouvées`, {
+          description: "Cliquez sur une table pour configurer les champs de recherche."
+        });
+      } else if (result.error) {
+        toast.error("Impossible de récupérer la liste des tables", {
+          description: result.error
+        });
       }
-    };
-    
+    } catch (error) {
+      console.error("Error fetching tables:", error);
+      toast.error("Impossible de récupérer la liste des tables", {
+        description: "Vérifiez vos paramètres de connexion à la base de données."
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Refresh the table list
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchTables();
+    setRefreshing(false);
+  };
+  
+  useEffect(() => {
     fetchTables();
   }, []);
   
@@ -146,6 +165,33 @@ const TableSearchConfig: React.FC<TableSearchConfigProps> = ({
     if (onChange) onChange(updatedConfigs);
   };
   
+  // Select all fields for a table
+  const selectAllFields = (tableName: string, type: 'searchFields' | 'displayFields') => {
+    const columns = tableColumns[tableName] || [];
+    const updatedConfigs = tableConfigs.map(config => {
+      if (config.name === tableName) {
+        return { ...config, [type]: [...columns] };
+      }
+      return config;
+    });
+    
+    setTableConfigs(updatedConfigs);
+    if (onChange) onChange(updatedConfigs);
+  };
+  
+  // Clear all selected fields for a table
+  const clearAllFields = (tableName: string, type: 'searchFields' | 'displayFields') => {
+    const updatedConfigs = tableConfigs.map(config => {
+      if (config.name === tableName) {
+        return { ...config, [type]: [] };
+      }
+      return config;
+    });
+    
+    setTableConfigs(updatedConfigs);
+    if (onChange) onChange(updatedConfigs);
+  };
+  
   // Select a table to configure
   const handleSelectTable = (tableName: string) => {
     setSelectedTable(tableName);
@@ -165,11 +211,25 @@ const TableSearchConfig: React.FC<TableSearchConfigProps> = ({
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader>
-          <CardTitle>Configuration des tables de recherche</CardTitle>
-          <CardDescription>
-            Sélectionnez les tables à inclure dans la recherche et configurez les champs.
-          </CardDescription>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <div>
+            <CardTitle>Configuration des tables de recherche</CardTitle>
+            <CardDescription>
+              Sélectionnez les tables à inclure dans la recherche et configurez les champs.
+            </CardDescription>
+          </div>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleRefresh}
+            disabled={refreshing || loading}
+          >
+            {refreshing || loading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              "Actualiser les tables"
+            )}
+          </Button>
         </CardHeader>
         
         <CardContent>
@@ -179,12 +239,20 @@ const TableSearchConfig: React.FC<TableSearchConfigProps> = ({
               <Skeleton className="h-4 w-3/4" />
               <Skeleton className="h-4 w-5/6" />
             </div>
+          ) : tableConfigs.length === 0 ? (
+            <div className="text-center py-8">
+              <Database className="h-12 w-12 mx-auto text-gray-500 mb-4" />
+              <h3 className="text-lg font-medium">Aucune table trouvée</h3>
+              <p className="text-sm text-gray-500 mt-2">
+                Vérifiez votre connexion à la base de données ou cliquez sur "Actualiser les tables"
+              </p>
+            </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {tableConfigs.map((config) => (
                 <div 
                   key={config.name}
-                  className="flex items-center justify-between p-2 border rounded hover:bg-gray-900 cursor-pointer"
+                  className={`flex items-center justify-between p-3 border rounded-md hover:bg-gray-900 cursor-pointer transition-colors ${selectedTable === config.name ? 'border-blue-500 bg-blue-950/20' : ''}`}
                   onClick={() => handleSelectTable(config.name)}
                 >
                   <div className="flex items-center gap-3">
@@ -197,8 +265,15 @@ const TableSearchConfig: React.FC<TableSearchConfigProps> = ({
                       {config.name}
                     </span>
                   </div>
-                  <div className="text-xs opacity-70">
-                    {config.searchFields.length} champs de recherche
+                  <div className="flex gap-2 text-xs opacity-70">
+                    <span className="flex items-center">
+                      <Search className="h-3 w-3 mr-1" />
+                      {config.searchFields.length}
+                    </span>
+                    <span className="flex items-center">
+                      <Eye className="h-3 w-3 mr-1" />
+                      {config.displayFields.length}
+                    </span>
                   </div>
                 </div>
               ))}
@@ -226,7 +301,25 @@ const TableSearchConfig: React.FC<TableSearchConfigProps> = ({
             ) : tableColumns[selectedTable] ? (
               <div className="space-y-4">
                 <div>
-                  <h3 className="text-sm font-medium mb-2">Champs de recherche</h3>
+                  <div className="flex justify-between items-center mb-2">
+                    <h3 className="text-sm font-medium">Champs de recherche</h3>
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => selectAllFields(selectedTable, 'searchFields')}
+                      >
+                        Tout sélectionner
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => clearAllFields(selectedTable, 'searchFields')}
+                      >
+                        Tout désélectionner
+                      </Button>
+                    </div>
+                  </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
                     {tableColumns[selectedTable].map(column => (
                       <div key={`search-${column}`} className="flex items-center space-x-2">
@@ -249,7 +342,25 @@ const TableSearchConfig: React.FC<TableSearchConfigProps> = ({
                 <Separator />
                 
                 <div>
-                  <h3 className="text-sm font-medium mb-2">Champs d'affichage</h3>
+                  <div className="flex justify-between items-center mb-2">
+                    <h3 className="text-sm font-medium">Champs d'affichage</h3>
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => selectAllFields(selectedTable, 'displayFields')}
+                      >
+                        Tout sélectionner
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => clearAllFields(selectedTable, 'displayFields')}
+                      >
+                        Tout désélectionner
+                      </Button>
+                    </div>
+                  </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
                     {tableColumns[selectedTable].map(column => (
                       <div key={`display-${column}`} className="flex items-center space-x-2">
@@ -275,6 +386,18 @@ const TableSearchConfig: React.FC<TableSearchConfigProps> = ({
               </div>
             )}
           </CardContent>
+          <CardFooter>
+            <Button
+              onClick={() => {
+                if (onChange) onChange(tableConfigs);
+                toast.success(`Configuration enregistrée pour ${selectedTable}`, {
+                  description: "Les changements seront appliqués à la prochaine recherche."
+                });
+              }}
+            >
+              Enregistrer la configuration
+            </Button>
+          </CardFooter>
         </Card>
       )}
     </div>

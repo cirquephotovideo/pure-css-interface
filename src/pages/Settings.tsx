@@ -14,7 +14,9 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import { Loader2 } from 'lucide-react';
 import TableSearchConfig from '@/components/settings/TableSearchConfig';
+import { executeRailwayQuery } from "@/services/railway/queryService";
 
 // Interface for table configuration
 interface TableConfig {
@@ -34,6 +36,7 @@ const Settings = () => {
   });
   
   const [tableConfigs, setTableConfigs] = useState<TableConfig[]>([]);
+  const [testingConnection, setTestingConnection] = useState(false);
   
   // Load saved table configurations on component mount
   useEffect(() => {
@@ -64,11 +67,31 @@ const Settings = () => {
     });
   };
 
-  const testConnection = () => {
-    // This would ideally call an API endpoint to test the connection
-    toast.info("Test de connexion", {
-      description: "Cette fonctionnalité sera disponible prochainement."
-    });
+  const testConnection = async () => {
+    setTestingConnection(true);
+    try {
+      // Use a simple query to test the connection
+      const query = "SELECT 1 as connection_test";
+      const result = await executeRailwayQuery(query);
+      
+      if (result.error) {
+        toast.error("Échec de la connexion", {
+          description: `Erreur: ${result.error}`
+        });
+      } else {
+        toast.success("Connexion réussie!", {
+          description: "La connexion à la base de données Railway a été établie avec succès."
+        });
+      }
+    } catch (error) {
+      console.error("Test connection error:", error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      toast.error("Échec de la connexion", {
+        description: `Erreur: ${errorMessage}`
+      });
+    } finally {
+      setTestingConnection(false);
+    }
   };
   
   const handleTableConfigChange = (configs: TableConfig[]) => {
@@ -159,8 +182,15 @@ const Settings = () => {
             </CardContent>
             
             <CardFooter className="flex justify-between">
-              <Button variant="outline" onClick={testConnection}>
-                Tester la connexion
+              <Button variant="outline" onClick={testConnection} disabled={testingConnection}>
+                {testingConnection ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Test en cours...
+                  </>
+                ) : (
+                  "Tester la connexion"
+                )}
               </Button>
               <Button onClick={saveSettings}>
                 Enregistrer les paramètres
