@@ -124,7 +124,7 @@ export async function searchProducts(term: string): Promise<QueryResult<Product>
       
       // Build a query part for this table
       if (table.table_name === 'products') {
-        // Enhanced search for products table - improve fuzzy matching
+        // Special case for the products table with broader pattern matching
         tableQueries.push(`
           SELECT 
             NULL AS id, 
@@ -144,6 +144,8 @@ export async function searchProducts(term: string): Promise<QueryResult<Product>
             "BRAND"::text ILIKE $1 
             OR "BRAND"::text ILIKE $2 
             OR "BRAND"::text ILIKE $3
+            OR "BRAND"::text ILIKE $4
+            OR "BRAND"::text = $5
         `);
       } else {
         // For raw tables, try to build a meaningful mapping
@@ -167,6 +169,8 @@ export async function searchProducts(term: string): Promise<QueryResult<Product>
             ${c.column_name}::text ILIKE $1 
             OR ${c.column_name}::text ILIKE $2
             OR ${c.column_name}::text ILIKE $3
+            OR ${c.column_name}::text ILIKE $4
+            OR ${c.column_name}::text = $5
           `);
         
         if (searchableColumns.length > 0) {
@@ -209,15 +213,26 @@ export async function searchProducts(term: string): Promise<QueryResult<Product>
     
     logMessage(LogLevel.INFO, `Recherche de produits avec "${term}" dans ${tableQueries.length} tables`);
     
-    // Process search term for better matching
-    const exactTerm = term.trim();
-    const wildcardTerm = `%${term.trim()}%`;
-    const wordsTerm = term.trim().split(/\s+/).join('%');
+    // Create multiple variations of the search term for better matching
+    const wildcardTerm = `%${term.trim()}%`;                 // Standard wildcard search: %GITZO MAGNESIUM%
+    const wordsTerm = `%${term.trim().split(/\s+/).join('%')}%`;  // Word-based search: %GITZO%MAGNESIUM%
+    const exactTerm = term.trim();                          // Exact term: GITZO MAGNESIUM
+    const startTerm = `${term.trim()}%`;                    // Starts with: GITZO MAGNESIUM%
+    
+    // Log the patterns being used for searching
+    logMessage(LogLevel.DEBUG, "Search patterns:", {
+      wildcardTerm,
+      wordsTerm,
+      exactTerm,
+      startTerm
+    });
+    
+    addToLogBuffer(LogLevel.INFO, `Patterns de recherche: général, par mot, exact, et début`);
     
     // Execute the combined search query with multiple search patterns
     const searchResult = await executeRailwayQuery<Product>(
       fullQuery, 
-      [wildcardTerm, `%${wordsTerm}%`, exactTerm]
+      [wildcardTerm, wordsTerm, startTerm, `%${term.trim().toLowerCase()}%`, exactTerm]
     );
     
     if (searchResult.error) {
