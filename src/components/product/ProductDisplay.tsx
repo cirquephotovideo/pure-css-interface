@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ProductDetailDialog from './dialog/ProductDetailDialog';
+import TableMappingsDisplay from '@/components/settings/TableMappingsDisplay';
 import {
   Table,
   TableBody,
@@ -168,6 +169,9 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
   return (
     <div className="container py-8">
       <SearchBar onSearch={handleSearch} isLoading={loading} hasError={!!error} />
+      
+      {/* Table Mappings Display */}
+      <TableMappingsDisplay className="mt-8" />
       
       {products.length > 0 && (
         <div className="mt-8">
