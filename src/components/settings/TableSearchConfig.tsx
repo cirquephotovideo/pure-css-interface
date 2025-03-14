@@ -10,7 +10,8 @@ import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { executeRailwayQuery } from "@/services/railway/queryService";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Loader2, Database, Search, Eye } from 'lucide-react';
+import { Loader2, Database, Search, Eye, Layers } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // Interface for table configuration
 interface TableConfig {
@@ -18,7 +19,23 @@ interface TableConfig {
   enabled: boolean;
   searchFields: string[];
   displayFields: string[];
+  columnMapping?: Record<string, string>;
 }
+
+// Standard column names for product data
+const standardColumns = [
+  { id: 'id', label: 'ID' },
+  { id: 'reference', label: 'Référence' },
+  { id: 'barcode', label: 'Code-barres' },
+  { id: 'description', label: 'Description' },
+  { id: 'brand', label: 'Marque' },
+  { id: 'supplier_code', label: 'Code fournisseur' },
+  { id: 'name', label: 'Nom' },
+  { id: 'price', label: 'Prix' },
+  { id: 'stock', label: 'Stock' },
+  { id: 'location', label: 'Emplacement' },
+  { id: 'ean', label: 'EAN' }
+];
 
 interface TableSearchConfigProps {
   onChange?: (configs: TableConfig[]) => void;
@@ -36,6 +53,7 @@ const TableSearchConfig: React.FC<TableSearchConfigProps> = ({
   const [tableColumns, setTableColumns] = useState<Record<string, string[]>>({});
   const [fetchingColumns, setFetchingColumns] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [configTab, setConfigTab] = useState('fields');
   
   // Fetch all raw_ tables from the database
   const fetchTables = async () => {
@@ -66,7 +84,8 @@ const TableSearchConfig: React.FC<TableSearchConfigProps> = ({
               name: table,
               enabled: false,
               searchFields: [],
-              displayFields: []
+              displayFields: [],
+              columnMapping: {}
             }))
           ];
           setTableConfigs(newConfigs);
@@ -165,6 +184,30 @@ const TableSearchConfig: React.FC<TableSearchConfigProps> = ({
     if (onChange) onChange(updatedConfigs);
   };
   
+  // Update column mapping
+  const updateColumnMapping = (tableName: string, standardField: string, tableField: string) => {
+    const updatedConfigs = tableConfigs.map(config => {
+      if (config.name === tableName) {
+        const columnMapping = config.columnMapping || {};
+        
+        // If tableField is empty, remove the mapping
+        const newMapping = tableField 
+          ? { ...columnMapping, [standardField]: tableField }
+          : { ...columnMapping };
+          
+        if (!tableField && standardField in newMapping) {
+          delete newMapping[standardField];
+        }
+        
+        return { ...config, columnMapping: newMapping };
+      }
+      return config;
+    });
+    
+    setTableConfigs(updatedConfigs);
+    if (onChange) onChange(updatedConfigs);
+  };
+  
   // Select all fields for a table
   const selectAllFields = (tableName: string, type: 'searchFields' | 'displayFields') => {
     const columns = tableColumns[tableName] || [];
@@ -191,11 +234,72 @@ const TableSearchConfig: React.FC<TableSearchConfigProps> = ({
     setTableConfigs(updatedConfigs);
     if (onChange) onChange(updatedConfigs);
   };
+
+  // Auto-map columns based on name similarities
+  const autoMapColumns = (tableName: string) => {
+    if (!tableColumns[tableName]) return;
+    
+    const columns = tableColumns[tableName];
+    const mapping: Record<string, string> = {};
+    
+    // Map standard fields to table columns based on name similarity
+    standardColumns.forEach(({ id }) => {
+      // Try to find a matching column
+      const match = columns.find(col => 
+        col.toLowerCase() === id.toLowerCase() ||
+        col.toLowerCase().includes(id.toLowerCase()) ||
+        (id === 'reference' && (col.toLowerCase().includes('articlenr') || col.toLowerCase().includes('code_article'))) ||
+        (id === 'barcode' && (col.toLowerCase().includes('ean') || col.toLowerCase().includes('code_barre'))) ||
+        (id === 'brand' && (col.toLowerCase().includes('marque') || col.toLowerCase() === 'brand')) ||
+        (id === 'supplier_code' && (col.toLowerCase().includes('oemnr') || col.toLowerCase().includes('supplierid'))) ||
+        (id === 'name' && (col.toLowerCase().includes('designation') || col.toLowerCase().includes('nom'))) ||
+        (id === 'location' && col.toLowerCase().includes('location'))
+      );
+      
+      if (match) {
+        mapping[id] = match;
+      }
+    });
+    
+    // Update config with the auto-mapping
+    const updatedConfigs = tableConfigs.map(config => {
+      if (config.name === tableName) {
+        return { 
+          ...config, 
+          columnMapping: { ...config.columnMapping, ...mapping } 
+        };
+      }
+      return config;
+    });
+    
+    setTableConfigs(updatedConfigs);
+    if (onChange) onChange(updatedConfigs);
+    
+    toast.success(`Auto-mapping terminé pour ${tableName}`, {
+      description: `${Object.keys(mapping).length} champs ont été mappés automatiquement.`
+    });
+  };
+  
+  // Clear all column mappings for a table
+  const clearColumnMappings = (tableName: string) => {
+    const updatedConfigs = tableConfigs.map(config => {
+      if (config.name === tableName) {
+        return { ...config, columnMapping: {} };
+      }
+      return config;
+    });
+    
+    setTableConfigs(updatedConfigs);
+    if (onChange) onChange(updatedConfigs);
+    
+    toast.success(`Mappings effacés pour ${tableName}`);
+  };
   
   // Select a table to configure
   const handleSelectTable = (tableName: string) => {
     setSelectedTable(tableName);
     fetchColumnsForTable(tableName);
+    setConfigTab('fields');
   };
   
   // Get the current configuration for the selected table
@@ -204,7 +308,8 @@ const TableSearchConfig: React.FC<TableSearchConfigProps> = ({
       name: selectedTable || '',
       enabled: false,
       searchFields: [],
-      displayFields: []
+      displayFields: [],
+      columnMapping: {}
     };
   };
   
@@ -274,6 +379,10 @@ const TableSearchConfig: React.FC<TableSearchConfigProps> = ({
                       <Eye className="h-3 w-3 mr-1" />
                       {config.displayFields.length}
                     </span>
+                    <span className="flex items-center">
+                      <Layers className="h-3 w-3 mr-1" />
+                      {config.columnMapping ? Object.keys(config.columnMapping || {}).length : 0}
+                    </span>
                   </div>
                 </div>
               ))}
@@ -287,8 +396,14 @@ const TableSearchConfig: React.FC<TableSearchConfigProps> = ({
           <CardHeader>
             <CardTitle>Configuration de {selectedTable}</CardTitle>
             <CardDescription>
-              Sélectionnez les champs à utiliser pour la recherche et l'affichage.
+              Configurez cette table pour améliorer la recherche et l'affichage.
             </CardDescription>
+            <Tabs value={configTab} onValueChange={setConfigTab} className="w-full mt-4">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="fields">Champs</TabsTrigger>
+                <TabsTrigger value="mapping">Correspondance des colonnes</TabsTrigger>
+              </TabsList>
+            </Tabs>
           </CardHeader>
           
           <CardContent>
@@ -299,7 +414,7 @@ const TableSearchConfig: React.FC<TableSearchConfigProps> = ({
                 <Skeleton className="h-4 w-5/6" />
               </div>
             ) : tableColumns[selectedTable] ? (
-              <div className="space-y-4">
+              <TabsContent value="fields" className="space-y-4 mt-0">
                 <div>
                   <div className="flex justify-between items-center mb-2">
                     <h3 className="text-sm font-medium">Champs de recherche</h3>
@@ -379,7 +494,64 @@ const TableSearchConfig: React.FC<TableSearchConfigProps> = ({
                     ))}
                   </div>
                 </div>
-              </div>
+              </TabsContent>
+              
+              <TabsContent value="mapping" className="mt-0 space-y-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-sm font-medium">Correspondance des colonnes</h3>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => autoMapColumns(selectedTable)}
+                    >
+                      Auto-mapping
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => clearColumnMappings(selectedTable)}
+                    >
+                      Effacer tout
+                    </Button>
+                  </div>
+                </div>
+                
+                <div className="text-sm text-muted-foreground mb-4">
+                  Spécifiez comment les champs de cette table correspondent aux champs standards. 
+                  Exemple: si la colonne pour la marque s'appelle "brand_name", associez-la à "brand".
+                </div>
+                
+                <div className="space-y-4">
+                  {standardColumns.map(({ id, label }) => {
+                    const tableConfig = getSelectedTableConfig();
+                    const currentMapping = tableConfig.columnMapping?.[id] || '';
+                    
+                    return (
+                      <div key={id} className="grid grid-cols-12 gap-4 items-center">
+                        <Label htmlFor={`map-${id}`} className="col-span-3">
+                          {label} ({id})
+                        </Label>
+                        <div className="col-span-9">
+                          <select
+                            id={`map-${id}`}
+                            className="w-full rounded-md border border-input bg-background px-3 py-2"
+                            value={currentMapping}
+                            onChange={(e) => updateColumnMapping(selectedTable, id, e.target.value)}
+                          >
+                            <option value="">-- Sélectionner une colonne --</option>
+                            {tableColumns[selectedTable].map(column => (
+                              <option key={column} value={column}>
+                                {column}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </TabsContent>
             ) : (
               <div className="text-center py-4 opacity-70">
                 Impossible de charger les colonnes pour cette table.

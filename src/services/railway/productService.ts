@@ -1,4 +1,3 @@
-
 /**
  * Railway DB Product Service
  * Handles product-related database operations
@@ -62,6 +61,15 @@ export async function fetchProducts(): Promise<QueryResult<Product>> {
   }
 }
 
+// Interface for table configuration with column mapping
+interface TableConfig {
+  name: string;
+  enabled: boolean;
+  searchFields: string[];
+  displayFields: string[];
+  columnMapping?: Record<string, string>;
+}
+
 /**
  * Search for products by term
  */
@@ -69,6 +77,18 @@ export async function searchProducts(term: string): Promise<QueryResult<Product>
   try {
     // Log the search operation
     logMessage(LogLevel.INFO, `Recherche par terme: ${term}`);
+    
+    // Get saved table configurations from localStorage
+    let tableConfigs: TableConfig[] = [];
+    try {
+      const savedConfigs = localStorage.getItem('railway_search_tables');
+      if (savedConfigs) {
+        tableConfigs = JSON.parse(savedConfigs);
+        logMessage(LogLevel.INFO, `Loaded ${tableConfigs.length} table configurations`);
+      }
+    } catch (error) {
+      logMessage(LogLevel.ERROR, "Error loading table configurations", { error });
+    }
     
     // First, get all available tables for searching
     const tablesQuery = `
@@ -94,13 +114,28 @@ export async function searchProducts(term: string): Promise<QueryResult<Product>
     // Get a list of raw tables to search
     const tables = tablesResult.data || [];
     
-    // Limit to the first 5 tables for performance
-    const selectedTables = tables.slice(0, 5);
+    // Filter tables by those enabled in configuration
+    const enabledTableNames = tableConfigs
+      .filter(config => config.enabled)
+      .map(config => config.name);
+    
+    // Use enabled tables from config, or fall back to the first 5 tables if none are enabled
+    const selectedTables = enabledTableNames.length > 0
+      ? tables.filter(table => enabledTableNames.includes(table.table_name))
+      : tables.slice(0, 5);
+    
+    logMessage(LogLevel.INFO, `Using ${selectedTables.length} tables for search`, {
+      enabledTables: enabledTableNames,
+      availableTables: tables.map(t => t.table_name)
+    });
     
     // Now for each table, get its columns to build a dynamic search query
     const tableQueries = [];
     
     for (const table of selectedTables) {
+      // Find config for this table
+      const tableConfig = tableConfigs.find(config => config.name === table.table_name);
+      
       const columnsQuery = `
           SELECT column_name
           FROM information_schema.columns
@@ -116,11 +151,16 @@ export async function searchProducts(term: string): Promise<QueryResult<Product>
       
       if (columnsResult.error) {
         logMessage(LogLevel.ERROR, `Error fetching columns for ${table.table_name}`, 
-                   { error: columnsResult.error });
+                  { error: columnsResult.error });
         continue;
       }
       
       const columns = columnsResult.data || [];
+      
+      // Log columns for debugging
+      logMessage(LogLevel.DEBUG, `Table ${table.table_name} has columns:`, {
+        columns: columns.map(c => c.column_name)
+      });
       
       // Build a query part for this table
       if (table.table_name === 'products') {
@@ -148,45 +188,69 @@ export async function searchProducts(term: string): Promise<QueryResult<Product>
             OR "BRAND"::text = $5
         `);
       } else {
-        // For raw tables, try to build a meaningful mapping
-        const hasId = columns.some(c => c.column_name.toLowerCase() === 'id');
-        const hasDescription = columns.some(c => c.column_name.toLowerCase() === 'description');
-        const hasBrand = columns.some(c => c.column_name.toLowerCase() === 'brand');
-        const hasArticleNr = columns.some(c => c.column_name.toLowerCase() === 'articlenr');
-        const hasEan = columns.some(c => c.column_name.toLowerCase() === 'eannr');
-        const hasPrice = columns.some(c => c.column_name.toLowerCase() === 'price');
-        const hasStock = columns.some(c => c.column_name.toLowerCase() === 'stock');
-        const hasLocation = columns.some(c => c.column_name.toLowerCase() === 'stock_location');
-        const hasOem = columns.some(c => c.column_name.toLowerCase() === 'oemnr');
-        const hasCodeArticle = columns.some(c => c.column_name.toLowerCase() === 'code_article');
-        const hasDescriptionOdr = columns.some(c => c.column_name.toLowerCase() === 'description_odr1');
-        
-        // Build a query for this raw table with expanded search terms
-        const searchableColumns = columns
-          .filter(c => ['id', 'brand', 'code_article', 'oemnr', 'articlenr', 
-                        'description_odr1', 'description'].includes(c.column_name.toLowerCase()))
-          .map(c => `
-            ${c.column_name}::text ILIKE $1 
-            OR ${c.column_name}::text ILIKE $2
-            OR ${c.column_name}::text ILIKE $3
-            OR ${c.column_name}::text ILIKE $4
-            OR ${c.column_name}::text = $5
-          `);
+        // For other tables, use the configured search fields if available
+        const searchableColumns = tableConfig && tableConfig.searchFields && tableConfig.searchFields.length > 0
+          ? tableConfig.searchFields.map(field => `
+              ${field}::text ILIKE $1 
+              OR ${field}::text ILIKE $2
+              OR ${field}::text ILIKE $3
+              OR ${field}::text ILIKE $4
+              OR ${field}::text = $5
+            `)
+          : columns
+              .filter(c => ['id', 'brand', 'code_article', 'oemnr', 'articlenr', 
+                            'description_odr1', 'description'].includes(c.column_name.toLowerCase()))
+              .map(c => `
+                ${c.column_name}::text ILIKE $1 
+                OR ${c.column_name}::text ILIKE $2
+                OR ${c.column_name}::text ILIKE $3
+                OR ${c.column_name}::text ILIKE $4
+                OR ${c.column_name}::text = $5
+              `);
         
         if (searchableColumns.length > 0) {
+          // Map columns based on configuration
+          const hasId = columns.some(c => c.column_name.toLowerCase() === 'id');
+          const hasDescription = columns.some(c => c.column_name.toLowerCase() === 'description');
+          const hasBrand = columns.some(c => c.column_name.toLowerCase() === 'brand');
+          const hasArticleNr = columns.some(c => c.column_name.toLowerCase() === 'articlenr');
+          const hasEan = columns.some(c => c.column_name.toLowerCase() === 'eannr');
+          const hasPrice = columns.some(c => c.column_name.toLowerCase() === 'price');
+          const hasStock = columns.some(c => c.column_name.toLowerCase() === 'stock');
+          const hasLocation = columns.some(c => c.column_name.toLowerCase() === 'stock_location');
+          const hasOem = columns.some(c => c.column_name.toLowerCase() === 'oemnr');
+          const hasCodeArticle = columns.some(c => c.column_name.toLowerCase() === 'code_article');
+          const hasDescriptionOdr = columns.some(c => c.column_name.toLowerCase() === 'description_odr1');
+          
+          // Use column mapping from table config if available
+          const columnMapping = tableConfig?.columnMapping || {};
+          
+          // Use the column mapping to find the correct field names
+          const mapColumn = (standardField: string, defaultCheck: boolean, defaultColumn: string): string => {
+            // If there's a mapping for this field, use it
+            if (columnMapping[standardField]) {
+              const mappedColumn = columnMapping[standardField];
+              // Check if the mapped column exists in the table
+              const exists = columns.some(c => c.column_name === mappedColumn);
+              return exists ? mappedColumn : 'NULL';
+            }
+            // Otherwise use the default column if it exists
+            return defaultCheck ? defaultColumn : 'NULL';
+          };
+          
           tableQueries.push(`
             SELECT 
-              ${hasId ? 'id' : 'NULL'} AS id, 
-              ${hasArticleNr ? 'articlenr' : 'NULL'} AS reference, 
-              ${hasEan ? 'eannr' : 'NULL'} AS barcode, 
-              ${hasDescription ? 'description' : 'NULL'} AS description, 
-              ${hasBrand ? 'brand' : 'NULL'} AS brand, 
-              ${hasOem ? 'oemnr' : 'NULL'} AS supplier_code, 
-              ${hasDescription ? 'description' : 'NULL'} AS name, 
-              ${hasPrice ? 'price' : 'NULL'} AS price, 
-              ${hasStock ? 'stock' : 'NULL'} AS stock, 
-              ${hasLocation ? 'stock_location' : 'NULL'} AS location, 
-              ${hasEan ? 'eannr' : 'NULL'} AS ean, 
+              ${mapColumn('id', hasId, 'id')} AS id, 
+              ${mapColumn('reference', hasArticleNr, 'articlenr')} AS reference, 
+              ${mapColumn('barcode', hasEan, 'eannr')} AS barcode, 
+              ${mapColumn('description', hasDescription, 'description')} AS description, 
+              ${mapColumn('brand', hasBrand, 'brand')} AS brand, 
+              ${mapColumn('supplier_code', hasOem, 'oemnr')} AS supplier_code, 
+              ${mapColumn('name', hasDescription, 'description')} AS name, 
+              ${mapColumn('price', hasPrice, 'price')} AS price, 
+              ${mapColumn('stock', hasStock, 'stock')} AS stock, 
+              ${mapColumn('location', hasLocation, 'stock_location')} AS location, 
+              ${mapColumn('ean', hasEan, 'eannr')} AS ean, 
               '${table.table_name}' AS source_table 
             FROM "${table.table_name}" 
             WHERE ${searchableColumns.join(' OR ')}
