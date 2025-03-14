@@ -2,7 +2,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-// Product interface to match our database schema for main_product table
+// Product interface to match our database schema for products table
 export interface Product {
   id: string;
   reference: string;
@@ -19,7 +19,7 @@ export interface Product {
   eco?: {
     [key: string]: number;
   };
-  // Additional fields that might be in main_product
+  // Additional fields that might be in products
   sku?: string;
   stock?: number;
   category?: string;
@@ -66,12 +66,12 @@ export async function executeRailwayQuery<T>(
 }
 
 /**
- * Fetch products from Railway database (main_product table)
+ * Fetch products from Railway database (products table)
  * @returns List of products
  */
 export async function fetchProducts() {
   const query = `
-    SELECT * FROM main_product 
+    SELECT * FROM products 
     ORDER BY reference ASC 
     LIMIT 20
   `;
@@ -80,14 +80,14 @@ export async function fetchProducts() {
 }
 
 /**
- * Search products in Railway database (main_product table)
+ * Search products in Railway database (products table)
  * @param searchTerm Term to search for
  * @returns List of matching products
  */
 export async function searchProducts(searchTerm: string) {
   const searchPattern = `%${searchTerm}%`;
   const query = `
-    SELECT * FROM main_product 
+    SELECT * FROM products 
     WHERE 
       reference ILIKE $1 OR 
       barcode ILIKE $1 OR 

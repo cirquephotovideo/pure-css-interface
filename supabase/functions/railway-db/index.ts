@@ -65,9 +65,15 @@ serve(async (req) => {
 
     try {
       // Execute the query
-      console.log("Executing query on Railway DB...");
+      console.log("Executing query on Railway DB:", query);
+      console.log("With parameters:", params || []);
       const result = await client.queryObject(query, params || []);
       console.log(`Query executed successfully, returned ${result.rows.length} rows`);
+      
+      // Log a sample row to help with debugging (only if there are rows)
+      if (result.rows.length > 0) {
+        console.log("Sample row:", JSON.stringify(result.rows[0], null, 2));
+      }
 
       // Return the result
       return new Response(
