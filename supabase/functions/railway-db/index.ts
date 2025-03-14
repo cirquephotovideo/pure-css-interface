@@ -34,9 +34,6 @@ serve(async (req) => {
       throw new Error("No SQL query provided");
     }
 
-    console.log("Executing query:", query);
-    console.log("With parameters:", params);
-
     // Create a Postgres client connected to Railway
     const client = new Client({
       hostname: RAILWAY_DB_HOST,
@@ -51,12 +48,10 @@ serve(async (req) => {
 
     // Connect to Railway DB
     await client.connect();
-    console.log("Connected to Railway PostgreSQL database");
 
     try {
       // Execute the query
       const result = await client.queryObject(query, params || []);
-      console.log(`Query executed successfully with ${result.rows.length} rows returned`);
 
       // Return the result
       return new Response(
@@ -66,7 +61,6 @@ serve(async (req) => {
     } finally {
       // Always close the connection
       await client.end();
-      console.log("Connection to Railway PostgreSQL database closed");
     }
   } catch (error) {
     console.error("Error executing query:", error.message);

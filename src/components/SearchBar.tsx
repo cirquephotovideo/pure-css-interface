@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
+import { Input } from '@/components/ui/input';
 
 interface SearchBarProps {
   className?: string;
@@ -20,7 +21,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ className, onSearch }) => {
       <div className="space-y-2">
         <h2 className="text-lg font-medium">Recherche parmi les produits</h2>
         <p className="text-sm text-muted-foreground">
-          Pour faire une recherche exacte, placer des guillemets autour du terme à rechercher.
+          Recherchez par référence, code-barres, description ou marque
         </p>
       </div>
       
@@ -31,18 +32,18 @@ const SearchBar: React.FC<SearchBarProps> = ({ className, onSearch }) => {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="tq77s95d"
+            placeholder="Saisir un terme de recherche..."
             className="flex-1 px-2 py-1 text-base border-none bg-transparent focus:outline-none"
           />
-          <span className="text-gray-500 ml-2">🎤</span>
         </div>
         
         <div className="flex justify-between">
           <button
             type="button"
             className="ios-button text-sm"
+            onClick={() => setQuery('')}
           >
-            Options ...
+            Effacer
           </button>
           
           <button

@@ -29,13 +29,8 @@ const Index = () => {
     }
   }, [error]);
 
-  useEffect(() => {
-    console.log('Fetched products:', products);
-  }, [products]);
-
   const handleSearch = (query: string) => {
     setSearchQuery(query);
-    console.log('Searching for:', query);
   };
 
   return (
