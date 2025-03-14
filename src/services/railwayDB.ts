@@ -1,4 +1,3 @@
-
 import { toast } from "sonner";
 
 // Product interface to match our database schema for products table
@@ -31,18 +30,56 @@ interface QueryResult<T> {
   error: string | null;
 }
 
+// Parse DB connection string if available
+function parseDBConnectionString(connectionString: string | null | undefined) {
+  if (!connectionString) return null;
+  
+  try {
+    // Pattern for PostgreSQL connection string: postgresql://user:password@host:port/database
+    const regex = /postgresql:\/\/([^:]+):([^@]+)@([^:]+):(\d+)\/(.+)/;
+    const matches = connectionString.match(regex);
+    
+    if (matches && matches.length === 6) {
+      return {
+        user: matches[1],
+        password: matches[2],
+        host: matches[3],
+        port: matches[4],
+        database: matches[5]
+      };
+    }
+    return null;
+  } catch (error) {
+    console.error("Error parsing connection string:", error);
+    return null;
+  }
+}
+
+// Try to get connection info from potential connection string
+const connectionString = import.meta.env.VITE_RAILWAY_DB_CONNECTION_STRING;
+const parsedConnection = parseDBConnectionString(connectionString);
+
 // Configuration de la connexion Railway DB
-// Use hardcoded values for now to avoid URL encoding issues
-const RAILWAY_DB_HOST = "containers-us-west-146.railway.app"; // Hardcoded valid host
-const RAILWAY_DB_PORT = "7739"; // Example port, update with your actual port
-const RAILWAY_DB_NAME = "railway";
-const RAILWAY_DB_USER = "postgres";
-// For development and testing, use a fallback password if env variable is not set
-const RAILWAY_DB_PASSWORD = import.meta.env.VITE_RAILWAY_DB_PASSWORD || "PLEASE_SET_RAILWAY_DB_PASSWORD";
+// Use connection string values if available, otherwise use individual settings
+const RAILWAY_DB_HOST = parsedConnection?.host || "containers-us-west-146.railway.app";
+const RAILWAY_DB_PORT = parsedConnection?.port || "7739";
+const RAILWAY_DB_NAME = parsedConnection?.database || "railway";
+const RAILWAY_DB_USER = parsedConnection?.user || "postgres";
+// Use explicit password if provided, otherwise use parsed connection string password or hardcoded fallback
+const RAILWAY_DB_PASSWORD = import.meta.env.VITE_RAILWAY_DB_PASSWORD || 
+                           parsedConnection?.password || 
+                           "AJJHHgZgkdZwXawcThnbDpwtzxFUuQaU";
 const RAILWAY_READ_ONLY_TOKEN = "dbe21f72-1f35-489b-8500-8823ebf152d5";
 
-// Debug log to check if password is defined
-console.log("Railway DB Password:", RAILWAY_DB_PASSWORD === "PLEASE_SET_RAILWAY_DB_PASSWORD" ? "Not set, using fallback" : "Defined");
+// Debug log to check configuration
+console.log("Railway DB Configuration:", {
+  host: RAILWAY_DB_HOST,
+  port: RAILWAY_DB_PORT,
+  database: RAILWAY_DB_NAME,
+  user: RAILWAY_DB_USER,
+  passwordProvided: RAILWAY_DB_PASSWORD ? "Yes" : "No",
+  connectionStringParsed: parsedConnection ? "Yes" : "No"
+});
 
 /**
  * Execute a query on the Railway PostgreSQL database
@@ -69,14 +106,6 @@ export async function executeRailwayQuery<T>(
       console.error(errorMessage);
       toast.error(errorMessage);
       return { data: null, count: 0, error: errorMessage };
-    }
-    
-    // Check if the password is the fallback value, warn but continue
-    if (RAILWAY_DB_PASSWORD === "PLEASE_SET_RAILWAY_DB_PASSWORD") {
-      console.warn("Using fallback Railway DB password. For production, please set VITE_RAILWAY_DB_PASSWORD environment variable.");
-      toast.warning("Connexion DB avec mot de passe par défaut", {
-        description: "Pour une utilisation en production, configurez la variable d'environnement VITE_RAILWAY_DB_PASSWORD."
-      });
     }
     
     // Vérifier si la requête est une opération de lecture seule
