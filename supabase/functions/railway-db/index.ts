@@ -34,6 +34,9 @@ serve(async (req) => {
       throw new Error("No SQL query provided");
     }
 
+    console.log("Executing query:", query);
+    console.log("With parameters:", params);
+
     // Create a Postgres client connected to Railway
     const client = new Client({
       hostname: RAILWAY_DB_HOST,

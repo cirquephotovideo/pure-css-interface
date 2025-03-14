@@ -77,6 +77,7 @@ export async function fetchProducts() {
  * @returns List of matching products
  */
 export async function searchProducts(searchTerm: string) {
+  const searchPattern = `%${searchTerm}%`;
   const query = `
     SELECT * FROM products 
     WHERE 
@@ -88,5 +89,5 @@ export async function searchProducts(searchTerm: string) {
     LIMIT 20
   `;
   
-  return executeRailwayQuery<Product>(query);
+  return executeRailwayQuery<Product>(query, [searchPattern]);
 }

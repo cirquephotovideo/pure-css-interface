@@ -29,6 +29,10 @@ const Index = () => {
     }
   }, [error]);
 
+  useEffect(() => {
+    console.log('Fetched products:', products);
+  }, [products]);
+
   const handleSearch = (query: string) => {
     setSearchQuery(query);
     console.log('Searching for:', query);
@@ -72,8 +76,12 @@ const Index = () => {
                 <div className="flex justify-center p-12">
                   <div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div>
                 </div>
-              ) : (
+              ) : products.length > 0 ? (
                 <ProductDisplay products={products} />
+              ) : (
+                <div className="text-center p-8 opacity-70">
+                  Aucun produit trouvé. Essayez une autre recherche.
+                </div>
               )}
             </div>
           </div>
