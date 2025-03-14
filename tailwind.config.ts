@@ -71,6 +71,11 @@ export default {
 					blue: 'hsl(var(--ios-blue))',
 					green: 'hsl(var(--ios-green))',
 					orange: 'hsl(var(--ios-orange))'
+				},
+				purple: {
+					light: '#9b87f5',
+					medium: '#7E69AB',
+					dark: '#6E59A5'
 				}
 			},
 			borderRadius: {
@@ -119,6 +124,10 @@ export default {
 				'fade-out': 'fade-out 0.3s ease-out',
 				'slide-in': 'slide-in 0.4s ease-out',
 				'scale-in': 'scale-in 0.3s ease-out'
+			},
+			backgroundImage: {
+				'gradient-app': 'linear-gradient(135deg, #e0e8ff 0%, #f5e3ff 100%)',
+				'gradient-sidebar': 'linear-gradient(to bottom, #9b87f5, #7E69AB)'
 			}
 		}
 	},

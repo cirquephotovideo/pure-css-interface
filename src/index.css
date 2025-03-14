@@ -5,7 +5,7 @@
 
 @layer base {
   :root {
-    --background: 135deg, #a1c4fd 0%, #fbc2eb 100%;
+    --background: 225, 100%, 98%;
     --foreground: 240 10% 3.9%;
     
     --card: 0 0% 100%;
@@ -14,35 +14,35 @@
     --popover: 0 0% 100%;
     --popover-foreground: 240 10% 3.9%;
     
-    --primary: 240 5.9% 10%;
+    --primary: 252 87% 67%;
     --primary-foreground: 0 0% 98%;
     
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
+    --secondary: 252 87% 96%;
+    --secondary-foreground: 252 87% 40%;
     
     --muted: 240 4.8% 95.9%;
     --muted-foreground: 240 3.8% 46.1%;
     
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
+    --accent: 252 87% 96%;
+    --accent-foreground: 252 87% 40%;
     
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
     
     --border: 240 5.9% 90%;
     --input: 240 5.9% 90%;
-    --ring: 240 5.9% 10%;
+    --ring: 252 87% 67%;
     
     --radius: 1.5rem;
 
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-background: 252 87% 20%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 252 87% 67%;
     --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-accent: 252 87% 30%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 252 87% 30%;
+    --sidebar-ring: 252 87% 67%;
     
     --ios-blue: 211 100% 50%;
     --ios-green: 142 70% 49%;
@@ -57,7 +57,7 @@
   }
   
   body {
-    background: linear-gradient(var(--background));
+    background: linear-gradient(135deg, #e0e8ff 0%, #f5e3ff 100%);
     @apply font-sans antialiased text-foreground min-h-screen;
   }
   
@@ -74,15 +74,16 @@
   }
   
   .ios-glass {
-    background: rgba(255, 255, 255, 0.2);
-    backdrop-filter: blur(15px);
-    -webkit-backdrop-filter: blur(15px);
+    background: rgba(255, 255, 255, 0.65);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     border-radius: var(--radius);
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.4);
   }
   
   .ios-surface {
-    background: rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.8);
     border-radius: 999px;
   }
   
@@ -108,7 +109,7 @@
   }
   
   .ios-switch input:checked + .ios-slider {
-    @apply bg-[#34C759];
+    @apply bg-[#9b87f5];
   }
   
   .ios-switch input:checked + .ios-slider:before {
@@ -116,8 +117,9 @@
   }
   
   .ios-button {
-    @apply bg-white/70 backdrop-blur-md shadow-sm rounded-xl px-4 py-2 font-medium 
-    transition-all hover:bg-white/90 active:scale-95 inline-flex items-center justify-center;
+    @apply bg-white/90 backdrop-blur-md shadow-md rounded-xl px-4 py-2 font-medium 
+    transition-all hover:bg-white active:scale-95 inline-flex items-center justify-center
+    border border-white/50;
   }
 }
 
