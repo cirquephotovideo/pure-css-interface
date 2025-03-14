@@ -59,24 +59,18 @@ export async function executeRailwayQuery<T>(
       return { data: null, count: 0, error: errorMessage };
     }
     
-    // Préparer l'URL de connexion PostgreSQL
-    const connectionString = `postgres://${RAILWAY_DB_USER}:${encodeURIComponent(RAILWAY_DB_PASSWORD)}@${RAILWAY_DB_HOST}:${RAILWAY_DB_PORT}/${RAILWAY_DB_NAME}`;
-    
-    // Préparer le corps de la requête avec la query et les paramètres
-    const requestBody = {
-      query,
-      params,
-      connectionString
-    };
-    
-    // Utiliser une API intermédiaire pour exécuter la requête PostgreSQL
-    // Cette API doit être configurée séparément (par exemple avec Express.js)
-    const response = await fetch("https://votre-api-railway-pg.com/query", {
+    // Utiliser l'edge function Supabase pour exécuter la requête PostgreSQL
+    const response = await fetch("https://hspgrehyavlqiilrajor.supabase.co/functions/v1/railway-db", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhzcGdyZWh5YXZscWlpbHJham9yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE5NTEwNzAsImV4cCI6MjA1NzUyNzA3MH0.wGPKekL1VBzO3WpqsnyahS7ncSBXrFMJA5ZjTwljDEE",
+        "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhzcGdyZWh5YXZscWlpbHJham9yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE5NTEwNzAsImV4cCI6MjA1NzUyNzA3MH0.wGPKekL1VBzO3WpqsnyahS7ncSBXrFMJA5ZjTwljDEE"
       },
-      body: JSON.stringify(requestBody),
+      body: JSON.stringify({
+        query,
+        params
+      }),
     });
     
     if (!response.ok) {
