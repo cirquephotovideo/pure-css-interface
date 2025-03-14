@@ -12,13 +12,13 @@ import { BarcodeIcon, Database, Tag, Package, Warehouse, CircleDollarSign, Shopp
 interface ProductDetailDialogProps {
   product: Product;
   isOpen: boolean;
-  onClose: () => void;
+  onOpenChange: (open: boolean) => void;
 }
 
 const ProductDetailDialog: React.FC<ProductDetailDialogProps> = ({
   product,
   isOpen,
-  onClose
+  onOpenChange
 }) => {
   // Calculate price information if available
   const price = product.prices && product.prices.length > 0 
@@ -41,7 +41,7 @@ const ProductDetailDialog: React.FC<ProductDetailDialogProps> = ({
     }));
   
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-hidden dark:bg-gray-800 dark:text-white">
         <DialogHeader>
           <Badge variant="outline" className="w-fit mb-2 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 flex items-center gap-1">
@@ -140,7 +140,7 @@ const ProductDetailDialog: React.FC<ProductDetailDialogProps> = ({
         </ScrollArea>
         
         <DialogFooter className="flex justify-between items-center pt-4">
-          <Button variant="outline" onClick={onClose} className="dark:bg-gray-700 dark:hover:bg-gray-600">
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="dark:bg-gray-700 dark:hover:bg-gray-600">
             Fermer
           </Button>
           <div className="flex gap-2">

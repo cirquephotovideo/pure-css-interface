@@ -238,7 +238,10 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
                             {product.description || product.name || "—"}
                           </TableCell>
                           <TableCell>{product.brand || "—"}</TableCell>
-                          <TableCell>{product.price ? `${product.price} €` : "—"}</TableCell>
+                          <TableCell>
+                            {product.prices && product.prices.length > 0 ? 
+                              `${product.prices[0].value} €` : "—"}
+                          </TableCell>
                           <TableCell>
                             <Button 
                               variant="ghost" 
@@ -275,9 +278,9 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
       {/* Product Detail Dialog */}
       {selectedProduct && (
         <ProductDetailDialog
-          open={isDetailOpen}
-          onOpenChange={setIsDetailOpen}
           product={selectedProduct}
+          isOpen={isDetailOpen}
+          onOpenChange={setIsDetailOpen}
         />
       )}
     </div>

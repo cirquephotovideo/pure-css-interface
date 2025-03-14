@@ -55,7 +55,7 @@ const TableSearchConfig: React.FC<TableSearchConfigProps> = ({
   const [tableColumns, setTableColumns] = useState<Record<string, string[]>>({});
   const [fetchingColumns, setFetchingColumns] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [configTab, setConfigTab] = useState(activeTab);
+  const [configTab, setConfigTab] = useState<'fields' | 'mapping'>(activeTab);
   
   useEffect(() => {
     setConfigTab(activeTab);
@@ -671,7 +671,11 @@ const TableSearchConfig: React.FC<TableSearchConfigProps> = ({
             <CardDescription>
               Configurez cette table pour améliorer la recherche et l'affichage.
             </CardDescription>
-            <Tabs value={configTab} onValueChange={setConfigTab} className="w-full mt-4">
+            <Tabs 
+              value={configTab} 
+              onValueChange={(value: string) => setConfigTab(value as 'fields' | 'mapping')} 
+              className="w-full mt-4"
+            >
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="fields">Champs</TabsTrigger>
                 <TabsTrigger value="mapping">Correspondance des colonnes</TabsTrigger>
@@ -716,4 +720,3 @@ const TableSearchConfig: React.FC<TableSearchConfigProps> = ({
 };
 
 export default TableSearchConfig;
-
