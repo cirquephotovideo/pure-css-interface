@@ -1,11 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
-import { Database, Loader2 } from 'lucide-react';
+import { Database, Loader2, ArrowDown, ArrowUp, Filter } from 'lucide-react';
 import { Product } from '@/services/railway';
 import ProductRow from './ProductRow';
 import SearchBar from '@/components/SearchBar';
 import { searchProducts, fetchProducts } from '@/services/railway/productService';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 
 interface ProductDisplayProps {
   products?: Product[];
@@ -21,6 +23,7 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTable, setSelectedTable] = useState<string | null>(null);
+  const [tableOrder, setTableOrder] = useState<string[]>([]);
   
   // Load initial products if none are provided
   useEffect(() => {
@@ -72,6 +75,13 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
         setProducts([]);
       } else {
         setProducts(result.data || []);
+        
+        // Extract tables in the order they appear
+        const tables = result.data
+          .map(p => p.source_table || 'products')
+          .filter((v, i, a) => a.indexOf(v) === i);
+          
+        setTableOrder(tables);
       }
     } catch (e) {
       console.error('Error searching products:', e);
@@ -82,13 +92,45 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
     }
   };
 
+  // Group products by barcode or supplier_code within each table
+  const groupProductsByTable = (products: Product[]) => {
+    // First group by table
+    const tableGroups: Record<string, Product[]> = {};
+    
+    products.forEach(product => {
+      const table = product.source_table || 'products';
+      if (!tableGroups[table]) {
+        tableGroups[table] = [];
+      }
+      tableGroups[table].push(product);
+    });
+    
+    // Sort the tables based on tableOrder
+    const orderedTables = Object.keys(tableGroups).sort((a, b) => {
+      const indexA = tableOrder.indexOf(a);
+      const indexB = tableOrder.indexOf(b);
+      return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
+    });
+    
+    // For each table, group products by barcode/ean/supplier_code
+    const result: { table: string, groups: Product[][] }[] = [];
+    
+    orderedTables.forEach(table => {
+      const tableProducts = tableGroups[table];
+      const groups = groupProducts(tableProducts);
+      result.push({ table, groups });
+    });
+    
+    return result;
+  };
+  
   // Group products by barcode or supplier_code
   const groupProducts = (products: Product[]) => {
     const groupedMap = new Map<string, Product[]>();
     
     products.forEach(product => {
       // Use barcode, ean, or supplier_code as grouping key
-      const groupKey = product.barcode || product.ean || product.supplier_code || product.id + product.source_table;
+      const groupKey = product.barcode || product.ean || product.supplier_code || product.id + (product.source_table || '');
       
       if (groupKey) {
         if (!groupedMap.has(groupKey)) {
@@ -105,11 +147,11 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
 
   // Filter products by selected table if needed
   const filteredProducts = selectedTable 
-    ? products.filter(p => p.source_table === selectedTable)
+    ? products.filter(p => (p.source_table || 'products') === selectedTable)
     : products;
   
-  // Group products with same barcode/supplier code
-  const groupedProducts = groupProducts(filteredProducts);
+  // Group products with same barcode/supplier code within tables
+  const groupedByTable = groupProductsByTable(filteredProducts);
   
   // Count unique source tables
   const sourceTables = new Set(products.map(product => product.source_table || 'products'));
@@ -137,9 +179,15 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
                 <div className="opacity-70 px-3 py-1 text-sm"></div>
               </div>
               
-              <button className="ios-button text-sm">
-                Voir stock et prix ({products.length})
-              </button>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" className="ios-button text-sm flex items-center gap-1">
+                  <Filter className="h-4 w-4" />
+                  Filtres
+                </Button>
+                <Button className="ios-button text-sm">
+                  Voir stock et prix ({products.length})
+                </Button>
+              </div>
             </div>
             
             {sourceTables.size > 1 && !selectedTable && (
@@ -172,25 +220,49 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
               </div>
             )}
             
-            <div className="space-y-4">
-              {groupedProducts.map((group, idx) => 
-                <ProductRow 
-                  key={`group-${idx}`} 
-                  productGroup={group} 
-                  onSelectTable={setSelectedTable} 
-                />
-              )}
-              
-              {groupedProducts.length === 0 && !loading && (
+            <div className="space-y-6">
+              {groupedByTable.length === 0 && !loading && (
                 <div className="text-center py-12 opacity-70">
                   {searchTerm ? 'Aucun résultat pour cette recherche' : 'Aucun produit disponible'}
                 </div>
               )}
+              
+              {groupedByTable.map(({ table, groups }, tableIndex) => (
+                <div key={`table-${table}-${tableIndex}`} className="space-y-4">
+                  <div className="flex items-center gap-2 bg-gray-100/50 dark:bg-gray-800/50 p-2 rounded-lg">
+                    <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 flex items-center gap-1">
+                      <Database className="h-3 w-3" />
+                      <span>{table}</span>
+                    </Badge>
+                    <span className="text-sm">{groups.length} résultats</span>
+                    
+                    <div className="ml-auto flex gap-2">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-7 px-2 text-xs" 
+                        onClick={() => setSelectedTable(table)}
+                      >
+                        <Filter className="h-3 w-3 mr-1" />
+                        Filtrer
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  {groups.map((group, groupIndex) => (
+                    <ProductRow 
+                      key={`group-${tableIndex}-${groupIndex}`} 
+                      productGroup={group} 
+                      onSelectTable={setSelectedTable} 
+                    />
+                  ))}
+                </div>
+              ))}
             </div>
             
-            {groupedProducts.length > 0 && (
+            {groupedByTable.length > 0 && (
               <div className="text-sm opacity-70 py-4 text-center">
-                1 sur {Math.ceil(groupedProducts.length / 10)}
+                1 sur {Math.ceil(groupedByTable.reduce((acc, { groups }) => acc + groups.length, 0) / 10)}
               </div>
             )}
           </>

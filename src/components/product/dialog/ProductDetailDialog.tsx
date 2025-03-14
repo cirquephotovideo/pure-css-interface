@@ -63,7 +63,7 @@ const ProductDetailDialog: React.FC<ProductDetailDialogProps> = ({
                 { 
                   label: "Référence", 
                   value: product.reference || "N/D", 
-                  icon: <Tag className="h-4 w-4" /> 
+                  icon: "tag"
                 },
                 { 
                   label: "Marque", 
@@ -84,7 +84,7 @@ const ProductDetailDialog: React.FC<ProductDetailDialogProps> = ({
                 { 
                   label: "Code EAN/Barcode", 
                   value: product.barcode || product.ean || "N/D",
-                  icon: <BarcodeIcon className="h-4 w-4" /> 
+                  icon: "barcode"
                 },
                 { 
                   label: "Code fournisseur", 
@@ -105,12 +105,12 @@ const ProductDetailDialog: React.FC<ProductDetailDialogProps> = ({
                   label: "Stock disponible", 
                   value: product.stock !== undefined ? String(product.stock) : "N/D",
                   highlight: product.stock !== undefined && product.stock > 0,
-                  icon: <Package className="h-4 w-4" /> 
+                  icon: "package"
                 },
                 { 
                   label: "Emplacement", 
                   value: product.location || "N/D",
-                  icon: <Warehouse className="h-4 w-4" /> 
+                  icon: "warehouse"
                 }
               ]}
             />
