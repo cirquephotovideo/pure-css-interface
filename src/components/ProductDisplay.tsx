@@ -1,10 +1,9 @@
-
 import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableHeader, TableHead, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Info } from 'lucide-react';
-import { Product } from '@/services/railwayDB';
+import { Product } from '@/services/railway';
 
 interface ProductDisplayProps {
   products: Product[];

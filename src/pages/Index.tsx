@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import Sidebar from '@/components/Sidebar';
 import SearchBar from '@/components/SearchBar';
 import ProductDisplay from '@/components/ProductDisplay';
-import { fetchProducts, searchProducts, Product } from '@/services/railwayDB';
+import { fetchProducts, searchProducts, Product } from '@/services/railway';
 import { toast } from 'sonner';
 
 const Index = () => {
