@@ -25,6 +25,8 @@ export interface Product {
   stock?: number;
   category?: string;
   subcategory?: string;
+  // Source table field to know where the product came from
+  source_table?: string;
 }
 
 // Standard query result interface

@@ -1,8 +1,9 @@
+
 import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableHeader, TableHead, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Info } from 'lucide-react';
+import { Info, Database } from 'lucide-react';
 import { Product } from '@/services/railway';
 
 interface ProductDisplayProps {
@@ -98,6 +99,15 @@ const ProductRow: React.FC<{
                   <p className="text-xs opacity-70">Emplacement</p>
                   <p className="font-medium">{product.location}</p>
                 </div>
+                {product.source_table && (
+                  <div className="bg-gray-50 p-3 rounded-md shadow-sm col-span-2">
+                    <p className="text-xs opacity-70">Source</p>
+                    <p className="font-medium flex items-center">
+                      <Database className="h-3 w-3 mr-1" />
+                      {product.source_table}
+                    </p>
+                  </div>
+                )}
               </div>
               <div className="bg-gray-50 p-3 rounded-md shadow-sm">
                 <p className="text-xs opacity-70">Description</p>
@@ -122,6 +132,12 @@ const ProductRow: React.FC<{
         <div className="flex flex-col gap-1 flex-1">
           <div className="flex items-center gap-1">
             <span className="text-sm font-medium">{product.reference}</span>
+            {product.source_table && product.source_table !== 'products' && (
+              <span className="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full flex items-center">
+                <Database className="h-3 w-3 mr-1" />
+                {product.source_table}
+              </span>
+            )}
           </div>
           <div className="text-xs opacity-70 mb-1">◼ {product.barcode}</div>
           <div className="text-sm leading-tight">{product.description}</div>
@@ -144,6 +160,9 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
   products,
   className
 }) => {
+  // Count unique source tables
+  const sourceTables = new Set(products.map(product => product.source_table || 'products'));
+  
   return (
     <div className={cn("w-full space-y-4", className)}>
       <div className="flex justify-between items-center">
@@ -158,6 +177,13 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
           Voir stock et prix ({products.length})
         </button>
       </div>
+      
+      {sourceTables.size > 1 && (
+        <div className="flex gap-2 items-center bg-blue-50 p-2 rounded-lg text-sm">
+          <Database className="h-4 w-4 text-blue-500" />
+          <span>Résultats de {sourceTables.size} tables: {Array.from(sourceTables).join(', ')}</span>
+        </div>
+      )}
       
       <div className="space-y-4">
         {products.map(product => <ProductRow key={product.id} product={product} />)}
