@@ -1,13 +1,10 @@
 
-import React, { useState } from 'react';
-import { toast } from "sonner";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
-import FieldsConfigTab from './FieldsConfigTab';
-import ColumnMappingTab from './ColumnMappingTab';
+import React from 'react';
+import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
 import { TableConfig } from "@/types/tableConfig";
+import ConfigDetailsHeader from './details/ConfigDetailsHeader';
+import ConfigContentSection from './details/ConfigContentSection';
+import ConfigSaveFooter from './details/ConfigSaveFooter';
 
 interface TableConfigDetailsProps {
   selectedTable: string | null;
@@ -45,68 +42,35 @@ const TableConfigDetails: React.FC<TableConfigDetailsProps> = ({
   
   const handleSaveConfig = () => {
     if (onConfigChange) onConfigChange(tableConfigs);
-    toast.success(`Configuration enregistrée pour ${selectedTable}`, {
-      description: "Les changements seront appliqués à la prochaine recherche."
-    });
   };
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Configuration de <span className="font-mono text-sm bg-muted p-1 rounded break-all">{selectedTable}</span></CardTitle>
-        <CardDescription>
-          Configurez cette table pour améliorer la recherche et l'affichage.
-        </CardDescription>
-        <Tabs 
-          value={configTab} 
-          onValueChange={(value: string) => setConfigTab(value as 'fields' | 'mapping')} 
-          className="w-full mt-4"
-        >
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="fields">Champs</TabsTrigger>
-            <TabsTrigger value="mapping">Correspondance des colonnes</TabsTrigger>
-          </TabsList>
-        </Tabs>
+        <ConfigDetailsHeader 
+          selectedTable={selectedTable}
+          configTab={configTab}
+          setConfigTab={setConfigTab}
+        />
       </CardHeader>
       
       <CardContent>
-        {fetchingColumns ? (
-          <div className="space-y-2">
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-3/4" />
-            <Skeleton className="h-4 w-5/6" />
-          </div>
-        ) : !columns.length ? (
-          <div className="text-center py-4 opacity-70">
-            Impossible de charger les colonnes pour cette table.
-          </div>
-        ) : (
-          <>
-            {configTab === 'fields' && (
-              <FieldsConfigTab
-                selectedTable={selectedTable}
-                tableColumns={columns}
-                tableConfig={tableConfig}
-                onConfigChange={onConfigChange}
-                tableConfigs={tableConfigs}
-              />
-            )}
-            {configTab === 'mapping' && (
-              <ColumnMappingTab
-                selectedTable={selectedTable}
-                tableColumns={columns}
-                tableConfig={tableConfig}
-                onConfigChange={onConfigChange}
-                tableConfigs={tableConfigs}
-              />
-            )}
-          </>
-        )}
+        <ConfigContentSection
+          fetchingColumns={fetchingColumns}
+          columns={columns}
+          selectedTable={selectedTable}
+          tableConfig={tableConfig}
+          onConfigChange={onConfigChange}
+          tableConfigs={tableConfigs}
+          configTab={configTab}
+        />
       </CardContent>
+      
       <CardFooter>
-        <Button onClick={handleSaveConfig}>
-          Enregistrer la configuration
-        </Button>
+        <ConfigSaveFooter
+          selectedTable={selectedTable}
+          onSave={handleSaveConfig}
+        />
       </CardFooter>
     </Card>
   );
