@@ -64,11 +64,11 @@ const Index = () => {
   const showLoading = isLoading && searchQuery !== '';
 
   return (
-    <div className="flex w-full h-screen overflow-hidden animate-fade-in">
+    <div className="flex w-full h-screen overflow-hidden animate-fade-in dark:bg-gray-900 dark:text-white">
       <Sidebar />
       
       <main className="flex-1 flex flex-col h-screen overflow-hidden">
-        <header className="ios-glass py-4 px-6 flex justify-between items-center mb-4 m-2 rounded-xl">
+        <header className="ios-glass py-4 px-6 flex justify-between items-center mb-4 m-2 rounded-xl dark:bg-gray-800/70">
           <div className="flex items-center gap-4">
             <button className="p-2 opacity-70 hover:opacity-100 transition-opacity">
               ≡
@@ -83,8 +83,8 @@ const Index = () => {
         
         <div className="flex-1 overflow-auto px-2">
           <div className="max-w-6xl mx-auto">
-            <nav className="flex ios-glass p-1 rounded-full mb-6">
-              <div className="px-5 py-2 text-sm font-medium rounded-full bg-white/30">
+            <nav className="flex ios-glass p-1 rounded-full mb-6 dark:bg-gray-800/70">
+              <div className="px-5 py-2 text-sm font-medium rounded-full bg-white/30 dark:bg-gray-700/50">
                 Recherche
               </div>
               <div className="px-5 py-2 text-sm opacity-70 hover:opacity-100 transition-opacity">
@@ -92,7 +92,7 @@ const Index = () => {
               </div>
             </nav>
             
-            <div className="ios-glass p-6 rounded-[20px] mb-6 animate-slide-in">
+            <div className="ios-glass p-6 rounded-[20px] mb-6 animate-slide-in dark:bg-gray-800/70">
               <SearchBar 
                 onSearch={handleSearch}
                 isLoading={showLoading}
@@ -100,28 +100,28 @@ const Index = () => {
               />
             </div>
             
-            <div className="ios-glass p-6 rounded-[20px] mb-6 animate-scale-in">
+            <div className="ios-glass p-6 rounded-[20px] mb-6 animate-scale-in dark:bg-gray-800/70">
               {showLoading ? (
                 <div className="flex justify-center p-12">
                   <div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div>
                 </div>
               ) : isError || productsData?.error ? (
-                <div className="text-center p-8 bg-red-50 rounded-lg">
-                  <p className="text-red-500 font-medium">Erreur de connexion à la base de données</p>
-                  <p className="text-sm text-red-400 mt-2">
+                <div className="text-center p-8 bg-red-50 dark:bg-red-900/20 rounded-lg">
+                  <p className="text-red-500 dark:text-red-400 font-medium">Erreur de connexion à la base de données</p>
+                  <p className="text-sm text-red-400 dark:text-red-300 mt-2">
                     {errorMessage.includes("Connection failed") || errorMessage.includes("DNS") ? 
                       "Problème de connexion avec la base de données Railway." : 
                       "Veuillez réessayer plus tard ou contacter le support technique."}
                   </p>
                   <button 
                     onClick={handleRetry}
-                    className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+                    className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors dark:bg-blue-700 dark:hover:bg-blue-600"
                   >
                     Réessayer
                   </button>
                   <details className="mt-4 text-left">
-                    <summary className="cursor-pointer text-xs text-red-400">Détails techniques</summary>
-                    <p className="mt-2 text-xs font-mono bg-red-100/50 p-2 rounded">{errorMessage}</p>
+                    <summary className="cursor-pointer text-xs text-red-400 dark:text-red-300">Détails techniques</summary>
+                    <p className="mt-2 text-xs font-mono bg-red-100/50 dark:bg-red-900/50 p-2 rounded">{errorMessage}</p>
                   </details>
                 </div>
               ) : products.length > 0 ? (
@@ -139,7 +139,7 @@ const Index = () => {
           </div>
         </div>
         
-        <footer className="ios-glass p-4 mb-2 mx-2 rounded-xl text-xs opacity-70 flex justify-between items-center">
+        <footer className="ios-glass p-4 mb-2 mx-2 rounded-xl text-xs opacity-70 flex justify-between items-center dark:bg-gray-800/70">
           <div>
             {new Date().toLocaleDateString('fr-FR')}, {new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
           </div>

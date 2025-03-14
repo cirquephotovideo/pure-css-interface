@@ -11,7 +11,7 @@ interface ProductInfoProps {
 const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
   return (
     <div className="flex gap-4 items-center flex-1">
-      <div className="w-20 h-16 bg-white/50 rounded-xl flex items-center justify-center flex-shrink-0">
+      <div className="w-20 h-16 bg-white/50 dark:bg-gray-700/50 rounded-xl flex items-center justify-center flex-shrink-0">
         <img 
           src={product.imageUrl || "/placeholder.svg"} 
           alt={product.reference} 
@@ -23,7 +23,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
         <div className="flex items-center gap-1">
           <span className="text-sm font-medium">{product.reference}</span>
           {product.source_table && product.source_table !== 'products' && (
-            <Badge variant="outline" className="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full flex items-center">
+            <Badge variant="outline" className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 text-xs px-2 py-0.5 rounded-full flex items-center">
               <Database className="h-3 w-3 mr-1" />
               {product.source_table}
             </Badge>
