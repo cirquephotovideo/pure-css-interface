@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Database, RefreshCw } from "lucide-react";
+import { ChevronLeft, ChevronRight, Database, RefreshCw, Download } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 
@@ -27,7 +27,7 @@ const TableDisplay = ({ tableName }: TableDisplayProps) => {
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const pageSize = 10;
+  const pageSize = 25; // Increased from 10 to 25 to show more rows
 
   const fetchTableData = async () => {
     try {
@@ -155,6 +155,43 @@ const TableDisplay = ({ tableName }: TableDisplayProps) => {
     return value.substring(0, maxLength) + '...';
   };
 
+  // Export the data as CSV
+  const exportTableAsCSV = () => {
+    try {
+      if (!data || data.length === 0 || columns.length === 0) {
+        toast.error("Pas de données à exporter");
+        return;
+      }
+
+      // Format data as CSV
+      const header = columns.join(',');
+      const rows = data.map(row => 
+        columns.map(col => {
+          const value = formatCellValue(row[col]);
+          // Escape commas and quotes in CSV
+          return `"${value.replace(/"/g, '""')}"`;
+        }).join(',')
+      );
+      
+      const csvContent = [header, ...rows].join('\n');
+      
+      // Create download link
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `${tableName}_export.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast.success(`Export de ${data.length} lignes réussi`);
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error("Erreur lors de l'export");
+    }
+  };
+
   return (
     <Card className="mb-6">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -162,17 +199,30 @@ const TableDisplay = ({ tableName }: TableDisplayProps) => {
           <Database size={18} />
           Table: {tableName}
         </CardTitle>
-        {error ? (
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={fetchTableData}
-            className="flex items-center gap-1"
-          >
-            <RefreshCw size={14} />
-            Réessayer
-          </Button>
-        ) : null}
+        <div className="flex gap-2">
+          {!loading && !error && data.length > 0 && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={exportTableAsCSV}
+              className="flex items-center gap-1"
+            >
+              <Download size={14} />
+              Exporter CSV
+            </Button>
+          )}
+          {error ? (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={fetchTableData}
+              className="flex items-center gap-1"
+            >
+              <RefreshCw size={14} />
+              Réessayer
+            </Button>
+          ) : null}
+        </div>
       </CardHeader>
       <CardContent>
         {loading ? (
@@ -204,14 +254,14 @@ const TableDisplay = ({ tableName }: TableDisplayProps) => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    {columns.slice(0, 8).map((column) => (
+                    {columns.slice(0, 10).map((column) => (
                       <TableHead key={column} className="font-medium">
                         {column}
                       </TableHead>
                     ))}
-                    {columns.length > 8 && (
+                    {columns.length > 10 && (
                       <TableHead>
-                        +{columns.length - 8} colonnes
+                        +{columns.length - 10} colonnes
                       </TableHead>
                     )}
                   </TableRow>
@@ -219,19 +269,19 @@ const TableDisplay = ({ tableName }: TableDisplayProps) => {
                 <TableBody>
                   {data.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={columns.length > 8 ? 9 : columns.length} className="text-center py-6 text-muted-foreground">
+                      <TableCell colSpan={columns.length > 10 ? 11 : columns.length} className="text-center py-6 text-muted-foreground">
                         Aucune donnée disponible
                       </TableCell>
                     </TableRow>
                   ) : (
                     data.map((row, index) => (
                       <TableRow key={index}>
-                        {columns.slice(0, 8).map((column) => (
+                        {columns.slice(0, 10).map((column) => (
                           <TableCell key={column} className="max-w-xs truncate">
                             {truncateValue(formatCellValue(row[column]))}
                           </TableCell>
                         ))}
-                        {columns.length > 8 && (
+                        {columns.length > 10 && (
                           <TableCell>...</TableCell>
                         )}
                       </TableRow>
@@ -251,7 +301,7 @@ const TableDisplay = ({ tableName }: TableDisplayProps) => {
                         <ChevronLeft size={16} />
                       </Button>
                       <span className="px-2 flex items-center">
-                        Page {page}
+                        Page {page} sur {Math.ceil(totalCount / pageSize)}
                       </span>
                       <Button 
                         variant="outline" 
