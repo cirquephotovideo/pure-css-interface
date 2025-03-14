@@ -10,6 +10,8 @@ import { Client } from "https://deno.land/x/postgres@v0.17.0/mod.ts";
 export function createPostgresClient(dbConfig) {
   const { host, port, database, user, password } = dbConfig;
   
+  console.log(`Creating PostgreSQL client for ${host}:${port}/${database} with user ${user}`);
+  
   return new Client({
     hostname: host,
     port: Number(port),
@@ -20,7 +22,7 @@ export function createPostgresClient(dbConfig) {
       enabled: true,
     },
     connection: {
-      attempts: 3,
+      attempts: 5,      // Increased retry attempts
       delay: 1000
     }
   });
@@ -33,6 +35,22 @@ export async function executeQuery(client, query, params) {
   try {
     console.log("Executing query on Railway DB:", query);
     console.log("With parameters:", params || []);
+    
+    // Try to connect with more detailed error logging
+    try {
+      await client.connect();
+      console.log("Successfully connected to Railway DB");
+    } catch (connectError) {
+      console.error("Error connecting to Railway DB:", connectError);
+      console.error("Connection details (sanitized):", {
+        hostname: client.connectionParams.hostname,
+        port: client.connectionParams.port,
+        database: client.connectionParams.database,
+        user: client.connectionParams.user,
+      });
+      throw connectError;
+    }
+    
     const result = await client.queryObject(query, params || []);
     console.log(`Query executed successfully, returned ${result.rows.length} rows`);
     
@@ -52,5 +70,12 @@ export async function executeQuery(client, query, params) {
       success: false,
       error: `Query execution failed: ${queryError.message}`
     };
+  } finally {
+    try {
+      await client.end();
+      console.log("PostgreSQL connection closed");
+    } catch (error) {
+      console.error("Error closing PostgreSQL connection:", error.message);
+    }
   }
 }
