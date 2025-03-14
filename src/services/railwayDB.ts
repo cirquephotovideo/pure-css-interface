@@ -2,7 +2,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-// Product interface to match our database schema
+// Product interface to match our database schema for main_product table
 export interface Product {
   id: string;
   reference: string;
@@ -19,6 +19,11 @@ export interface Product {
   eco?: {
     [key: string]: number;
   };
+  // Additional fields that might be in main_product
+  sku?: string;
+  stock?: number;
+  category?: string;
+  subcategory?: string;
 }
 
 interface QueryResult<T> {
@@ -38,6 +43,8 @@ export async function executeRailwayQuery<T>(
   params: any[] = []
 ): Promise<QueryResult<T>> {
   try {
+    console.log("Executing Railway query:", query, "with params:", params);
+    
     const { data, error } = await supabase.functions.invoke("railway-db", {
       body: { query, params },
     });
@@ -48,6 +55,7 @@ export async function executeRailwayQuery<T>(
       return { data: null, count: 0, error: error.message };
     }
 
+    console.log("Railway query result:", data);
     return data as QueryResult<T>;
   } catch (error) {
     console.error("Error calling Railway DB function:", error);
@@ -58,12 +66,12 @@ export async function executeRailwayQuery<T>(
 }
 
 /**
- * Example function to fetch products from Railway database
+ * Fetch products from Railway database (main_product table)
  * @returns List of products
  */
 export async function fetchProducts() {
   const query = `
-    SELECT * FROM products 
+    SELECT * FROM main_product 
     ORDER BY reference ASC 
     LIMIT 20
   `;
@@ -72,14 +80,14 @@ export async function fetchProducts() {
 }
 
 /**
- * Search products in Railway database
+ * Search products in Railway database (main_product table)
  * @param searchTerm Term to search for
  * @returns List of matching products
  */
 export async function searchProducts(searchTerm: string) {
   const searchPattern = `%${searchTerm}%`;
   const query = `
-    SELECT * FROM products 
+    SELECT * FROM main_product 
     WHERE 
       reference ILIKE $1 OR 
       barcode ILIKE $1 OR 

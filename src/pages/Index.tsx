@@ -13,10 +13,14 @@ const Index = () => {
   // Fetch products based on search query or get all products
   const { data: productsData, isLoading, error } = useQuery({
     queryKey: ['products', searchQuery],
-    queryFn: () => searchQuery 
-      ? searchProducts(searchQuery) 
-      : fetchProducts(),
+    queryFn: () => {
+      console.log("Fetching products with search query:", searchQuery);
+      return searchQuery 
+        ? searchProducts(searchQuery) 
+        : fetchProducts();
+    },
     staleTime: 60 * 1000, // 1 minute
+    retry: 1, // Only retry once to avoid excessive logging
   });
 
   // Get products from the query result or use empty array
@@ -29,7 +33,16 @@ const Index = () => {
     }
   }, [error]);
 
+  // Add debug logging
+  useEffect(() => {
+    console.log("Products loaded:", products.length);
+    if (products.length > 0) {
+      console.log("Sample product:", products[0]);
+    }
+  }, [products]);
+
   const handleSearch = (query: string) => {
+    console.log("Search query:", query);
     setSearchQuery(query);
   };
 
@@ -70,6 +83,11 @@ const Index = () => {
               {isLoading ? (
                 <div className="flex justify-center p-12">
                   <div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div>
+                </div>
+              ) : error ? (
+                <div className="text-center p-8 bg-red-50 rounded-lg">
+                  <p className="text-red-500 font-medium">Erreur de connexion à la base de données</p>
+                  <p className="text-sm text-red-400 mt-2">Veuillez vérifier la configuration de Railway</p>
                 </div>
               ) : products.length > 0 ? (
                 <ProductDisplay products={products} />

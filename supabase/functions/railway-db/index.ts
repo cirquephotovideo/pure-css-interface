@@ -24,15 +24,21 @@ serve(async (req) => {
     const RAILWAY_DB_PASSWORD = Deno.env.get('RAILWAY_DB_PASSWORD');
 
     if (!RAILWAY_DB_HOST || !RAILWAY_DB_PORT || !RAILWAY_DB_NAME || !RAILWAY_DB_USER || !RAILWAY_DB_PASSWORD) {
+      console.error("Missing Railway database configuration variables");
       throw new Error("Missing Railway database configuration");
     }
+
+    console.log(`Attempting connection to Railway DB at ${RAILWAY_DB_HOST}:${RAILWAY_DB_PORT}/${RAILWAY_DB_NAME}`);
 
     // Parse the request body for the query
     const { query, params } = await req.json();
 
     if (!query) {
+      console.error("No SQL query provided in request");
       throw new Error("No SQL query provided");
     }
+
+    console.log(`Executing query: ${query.substring(0, 100)}... with params: ${JSON.stringify(params || [])}`);
 
     // Create a Postgres client connected to Railway
     const client = new Client({
@@ -46,27 +52,42 @@ serve(async (req) => {
       },
     });
 
+    console.log("Connecting to Railway DB...");
+    
     // Connect to Railway DB
-    await client.connect();
+    try {
+      await client.connect();
+      console.log("Successfully connected to Railway DB");
+    } catch (connectError) {
+      console.error("Error connecting to Railway DB:", connectError.message);
+      throw new Error(`Connection failed: ${connectError.message}`);
+    }
 
     try {
       // Execute the query
+      console.log("Executing query on Railway DB...");
       const result = await client.queryObject(query, params || []);
+      console.log(`Query executed successfully, returned ${result.rows.length} rows`);
 
       // Return the result
       return new Response(
         JSON.stringify({ data: result.rows, count: result.rows.length, error: null }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    } catch (queryError) {
+      console.error("Error executing query:", queryError.message);
+      throw new Error(`Query execution failed: ${queryError.message}`);
     } finally {
       // Always close the connection
+      console.log("Closing Railway DB connection...");
       await client.end();
+      console.log("Railway DB connection closed");
     }
   } catch (error) {
-    console.error("Error executing query:", error.message);
+    console.error("Error in Railway DB function:", error.message, error.stack);
     
     return new Response(
-      JSON.stringify({ data: null, error: error.message }),
+      JSON.stringify({ data: null, count: 0, error: error.message }),
       { 
         status: 500, 
         headers: { ...corsHeaders, "Content-Type": "application/json" } 

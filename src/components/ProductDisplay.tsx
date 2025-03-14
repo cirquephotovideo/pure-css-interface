@@ -20,7 +20,13 @@ const ProductRow: React.FC<{
   const handleOpenDialog = (priceType: string) => {
     setOpenInfoDialog(priceType);
   };
-  return <div className="ios-glass flex items-center gap-4 p-4 mb-4 animate-fade-in">
+
+  // Handle potentially missing data in the product object
+  const prices = product.prices || [];
+  const eco = product.eco || {};
+  
+  return (
+    <div className="ios-glass flex items-center gap-4 p-4 mb-4 animate-fade-in">
       <div className="w-[340px] flex-shrink-0 mr-3">
         <Table className="w-full bg-white/60 rounded-xl overflow-hidden text-xs shadow-sm">
           <TableHeader className="bg-white/80">
@@ -33,25 +39,36 @@ const ProductRow: React.FC<{
             </TableRow>
           </TableHeader>
           <TableBody>
-            {product.prices.map((price, index) => <TableRow key={index} className="border-b border-white/30 hover:bg-white/70">
-                <TableCell className="py-2 px-2 font-medium">{price.type}</TableCell>
-                <TableCell className="py-2 px-2"></TableCell>
-                <TableCell className="py-2 px-2 font-medium">{price.value.toFixed(2)}</TableCell>
-                <TableCell className="py-2 px-2">
-                  {product.eco && product.eco[price.type] ? product.eco[price.type].toFixed(2) : ''}
+            {prices.length > 0 ? (
+              prices.map((price, index) => (
+                <TableRow key={index} className="border-b border-white/30 hover:bg-white/70">
+                  <TableCell className="py-2 px-2 font-medium">{price.type}</TableCell>
+                  <TableCell className="py-2 px-2">{product.stock || ''}</TableCell>
+                  <TableCell className="py-2 px-2 font-medium">{price.value.toFixed(2)}</TableCell>
+                  <TableCell className="py-2 px-2">
+                    {eco && eco[price.type] ? eco[price.type].toFixed(2) : ''}
+                  </TableCell>
+                  <TableCell className="py-2 px-2 text-center">
+                    <button onClick={() => handleOpenDialog(price.type)} className="cursor-pointer hover:bg-white/90 rounded-full p-1 transition-colors">
+                      <Info className="h-4 w-4 text-black/70" />
+                    </button>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow className="border-b border-white/30">
+                <TableCell colSpan={5} className="py-2 px-2 text-center text-gray-500">
+                  Aucun prix disponible
                 </TableCell>
-                <TableCell className="py-2 px-2 text-center">
-                  <button onClick={() => handleOpenDialog(price.type)} className="cursor-pointer hover:bg-white/90 rounded-full p-1 transition-colors">
-                    <Info className="h-4 w-4 text-black/70" />
-                  </button>
-                </TableCell>
-              </TableRow>)}
+              </TableRow>
+            )}
           </TableBody>
         </Table>
       </div>
       
       {/* Price Info Dialog */}
-      {product.prices.map((price, index) => <Dialog key={index} open={openInfoDialog === price.type} onOpenChange={() => setOpenInfoDialog(null)}>
+      {prices.map((price, index) => (
+        <Dialog key={index} open={openInfoDialog === price.type} onOpenChange={() => setOpenInfoDialog(null)}>
           <DialogContent className="bg-white max-w-md">
             <DialogHeader>
               <DialogTitle className="text-center">Détails du Prix - {price.type}</DialogTitle>
@@ -72,7 +89,7 @@ const ProductRow: React.FC<{
                 </div>
                 <div className="bg-gray-50 p-3 rounded-md shadow-sm">
                   <p className="text-xs opacity-70">Eco-participation</p>
-                  <p className="font-medium">{product.eco && product.eco[price.type] ? product.eco[price.type].toFixed(2) : '0.00'} €</p>
+                  <p className="font-medium">{eco && eco[price.type] ? eco[price.type].toFixed(2) : '0.00'} €</p>
                 </div>
                 <div className="bg-gray-50 p-3 rounded-md shadow-sm">
                   <p className="text-xs opacity-70">Marque</p>
@@ -89,7 +106,8 @@ const ProductRow: React.FC<{
               </div>
             </div>
           </DialogContent>
-        </Dialog>)}
+        </Dialog>
+      ))}
       
       <div className="w-10 flex-shrink-0">
         <div className="flex items-center justify-center w-6 h-6 text-xs opacity-70">
@@ -119,14 +137,16 @@ const ProductRow: React.FC<{
           </div>
         </div>
       </div>
-    </div>;
+    </div>
+  );
 };
 
 const ProductDisplay: React.FC<ProductDisplayProps> = ({
   products,
   className
 }) => {
-  return <div className={cn("w-full space-y-4", className)}>
+  return (
+    <div className={cn("w-full space-y-4", className)}>
       <div className="flex justify-between items-center">
         <div className="flex gap-4 text-sm">
           <div className="ios-surface px-3 py-1 text-sm font-medium">Catalogue</div>
@@ -147,7 +167,8 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
       <div className="text-sm opacity-70 py-4 text-center">
         {products.length > 0 ? `1 sur ${Math.ceil(products.length / 10)}` : 'Aucun résultat'}
       </div>
-    </div>;
+    </div>
+  );
 };
 
 export default ProductDisplay;
