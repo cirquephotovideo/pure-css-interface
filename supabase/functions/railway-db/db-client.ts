@@ -65,9 +65,12 @@ export async function executeQuery(client, query, params) {
     const result = await client.queryObject(query, params || []);
     console.log(`Query executed successfully, returned ${result.rows.length} rows`);
     
-    // Log a sample row to help with debugging (only if there are rows)
+    // Log the entire result to help with debugging
     if (result.rows.length > 0) {
-      console.log("Sample row:", JSON.stringify(result.rows[0], null, 2));
+      console.log("First row of result:", JSON.stringify(result.rows[0], null, 2));
+      // Log row count and column names
+      const columns = Object.keys(result.rows[0]);
+      console.log(`Result has ${result.rows.length} rows with columns: ${columns.join(', ')}`);
     }
 
     return {
@@ -77,6 +80,7 @@ export async function executeQuery(client, query, params) {
     };
   } catch (queryError) {
     console.error("Error executing query:", queryError.message);
+    console.error("Query error details:", queryError);
     return {
       success: false,
       error: `Query execution failed: ${queryError.message}`

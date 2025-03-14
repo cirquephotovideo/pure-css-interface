@@ -52,40 +52,21 @@ export async function handleRequest(req) {
 
     console.log("Connecting to Railway DB...");
     
-    // Connect to Railway DB
-    try {
-      await client.connect();
-      console.log("Successfully connected to Railway DB");
-    } catch (connectError) {
-      console.error("Error connecting to Railway DB:", connectError.message, connectError.stack);
-      return createErrorResponse(`Connection failed: ${connectError.message}. Please check Railway database configuration.`, 500);
+    // Execute the query with the client handling the connection
+    const result = await executeQuery(client, query, params);
+    
+    if (!result.success) {
+      console.error("Query execution failed:", result.error);
+      return createErrorResponse(result.error, 500);
     }
-
-    try {
-      // Execute the query
-      console.log("Executing query:", query.substring(0, 200) + (query.length > 200 ? '...' : ''));
-      console.log("With params:", params);
-      
-      const result = await executeQuery(client, query, params);
-      
-      if (!result.success) {
-        console.error("Query execution failed:", result.error);
-        return createErrorResponse(result.error, 500);
-      }
-      
-      console.log(`Query successful. Returned ${result.count} rows.`);
-      // Log a sample of the result for debugging if available
-      if (result.data && result.data.length > 0) {
-        console.log("Sample result row:", JSON.stringify(result.data[0]).substring(0, 200));
-      }
-      
-      return createSuccessResponse(result.data, result.count);
-    } finally {
-      // Always close the connection
-      console.log("Closing Railway DB connection...");
-      await client.end();
-      console.log("Railway DB connection closed");
+    
+    console.log(`Query successful. Returned ${result.count} rows.`);
+    // Log a sample of the result for debugging if available
+    if (result.data && result.data.length > 0) {
+      console.log("Sample result row:", JSON.stringify(result.data[0]).substring(0, 200));
     }
+    
+    return createSuccessResponse(result.data, result.count);
   } catch (error) {
     console.error("Error in Railway DB function:", error.message, error.stack);
     return createErrorResponse(`Server error: ${error.message}`, 500);

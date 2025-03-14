@@ -81,7 +81,8 @@ const Catalogs = () => {
   // Add a table to the display list
   const addTableToDisplay = () => {
     if (selectedTable && !displayedTables.includes(selectedTable)) {
-      setDisplayedTables([...displayedTables, selectedTable]);
+      console.log(`Adding table ${selectedTable} to displayed tables`);
+      setDisplayedTables(prev => [...prev, selectedTable]);
       toast.success(`Table ${selectedTable} ajoutée`);
     } else if (displayedTables.includes(selectedTable)) {
       toast.info(`La table ${selectedTable} est déjà affichée`);
@@ -90,6 +91,7 @@ const Catalogs = () => {
   
   // Remove a table from the display list
   const removeTable = (tableName: string) => {
+    console.log(`Removing table ${tableName} from displayed tables`);
     setDisplayedTables(displayedTables.filter(t => t !== tableName));
     toast.info(`Table ${tableName} retirée`);
   };
@@ -98,6 +100,11 @@ const Catalogs = () => {
   const getConnectionInfo = () => {
     return `${RAILWAY_DB_HOST}:${RAILWAY_DB_PORT}/${RAILWAY_DB_NAME}`;
   };
+
+  // This effect logs when displayedTables changes to help with debugging
+  useEffect(() => {
+    console.log("Current displayed tables:", displayedTables);
+  }, [displayedTables]);
 
   return (
     <div className="container p-4 mx-auto">
@@ -113,7 +120,10 @@ const Catalogs = () => {
             <div className="flex-1">
               <Select
                 value={selectedTable}
-                onValueChange={setSelectedTable}
+                onValueChange={(value) => {
+                  console.log(`Selected table changed to: ${value}`);
+                  setSelectedTable(value);
+                }}
                 disabled={loading || tables.length === 0}
               >
                 <SelectTrigger>
@@ -129,7 +139,10 @@ const Catalogs = () => {
               </Select>
             </div>
             <Button 
-              onClick={addTableToDisplay}
+              onClick={() => {
+                console.log(`Add table button clicked for table: ${selectedTable}`);
+                addTableToDisplay();
+              }}
               disabled={loading || !selectedTable}
               className="flex items-center gap-2"
             >
@@ -208,9 +221,14 @@ const Catalogs = () => {
         </CardFooter>
       </Card>
       
-      {displayedTables.map(table => (
-        <TableDisplay key={table} tableName={table} />
-      ))}
+      {/* Display selected tables - added debug comment */}
+      {displayedTables.length > 0 && (
+        <div className="space-y-8">
+          {displayedTables.map(table => (
+            <TableDisplay key={`display-${table}`} tableName={table} />
+          ))}
+        </div>
+      )}
     </div>
   );
 };
