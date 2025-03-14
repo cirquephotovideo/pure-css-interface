@@ -33,14 +33,14 @@ const connectionString = import.meta.env.VITE_RAILWAY_DB_CONNECTION_STRING;
 const parsedConnection = parseDBConnectionString(connectionString);
 
 // Configuration for Railway DB connection
-// Use connection string values if available, otherwise try individual environment variables
+// Updated with the new values from command line
 export const RAILWAY_DB_HOST = parsedConnection?.host || 
                              import.meta.env.VITE_RAILWAY_DB_HOST || 
-                             "containers-us-west-146.railway.app";
+                             "autorack.proxy.rlwy.net";
 
 export const RAILWAY_DB_PORT = parsedConnection?.port || 
                              import.meta.env.VITE_RAILWAY_DB_PORT || 
-                             "7739";
+                             "32112";
 
 export const RAILWAY_DB_NAME = parsedConnection?.database || 
                              import.meta.env.VITE_RAILWAY_DB_NAME || 
