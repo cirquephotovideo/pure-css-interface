@@ -20,6 +20,8 @@ export function createPostgresClient(dbConfig) {
     password,
     tls: {
       enabled: true,
+      enforce: false,  // Don't enforce TLS, fallback to non-TLS if needed
+      caCertificates: [], // Using an empty array to accept any certificate
     },
     connection: {
       attempts: 5,      // Increased retry attempts
@@ -48,7 +50,16 @@ export async function executeQuery(client, query, params) {
         database: client.connectionParams.database,
         user: client.connectionParams.user,
       });
-      throw connectError;
+      
+      // Try one more time with TLS disabled if it's a TLS error
+      if (connectError.message && connectError.message.includes("TLS")) {
+        console.log("TLS connection failed, trying again with TLS disabled");
+        client.connectionParams.tls.enabled = false;
+        await client.connect();
+        console.log("Successfully connected to Railway DB without TLS");
+      } else {
+        throw connectError;
+      }
     }
     
     const result = await client.queryObject(query, params || []);
