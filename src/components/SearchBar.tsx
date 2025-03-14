@@ -1,7 +1,6 @@
 
 import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
-import { Input } from '@/components/ui/input';
 
 interface SearchBarProps {
   className?: string;
@@ -13,7 +12,9 @@ const SearchBar: React.FC<SearchBarProps> = ({ className, onSearch }) => {
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSearch(query);
+    if (query.trim()) {
+      onSearch(query.trim());
+    }
   };
   
   return (
@@ -41,7 +42,10 @@ const SearchBar: React.FC<SearchBarProps> = ({ className, onSearch }) => {
           <button
             type="button"
             className="ios-button text-sm"
-            onClick={() => setQuery('')}
+            onClick={() => {
+              setQuery('');
+              onSearch('');
+            }}
           >
             Effacer
           </button>
@@ -49,6 +53,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ className, onSearch }) => {
           <button
             type="submit"
             className="ios-button text-sm"
+            disabled={query.trim() === ''}
           >
             Rechercher
           </button>
