@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -509,7 +510,8 @@ const TableSearchConfig: React.FC<TableSearchConfigProps> = ({
                               onCheckedChange={() => toggleTableEnabled(config.name)}
                               onClick={(e) => e.stopPropagation()}
                             />
-                            <span className={`${config.enabled ? "font-medium" : "opacity-70"} truncate max-w-[150px]`}>
+                            {/* Changed from truncate to break-words for multiple lines */}
+                            <span className={`${config.enabled ? "font-medium" : "opacity-70"} break-words w-full`}>
                               {config.name}
                             </span>
                           </div>
@@ -544,7 +546,7 @@ const TableSearchConfig: React.FC<TableSearchConfigProps> = ({
       {selectedTable && (
         <Card>
           <CardHeader>
-            <CardTitle>Configuration de <span className="font-mono text-sm bg-muted p-1 rounded">{selectedTable}</span></CardTitle>
+            <CardTitle>Configuration de <span className="font-mono text-sm bg-muted p-1 rounded break-all">{selectedTable}</span></CardTitle>
             <CardDescription>
               Configurez cette table pour améliorer la recherche et l'affichage.
             </CardDescription>
