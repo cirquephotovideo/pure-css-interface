@@ -2,7 +2,8 @@
 import React from 'react';
 import { Product } from '@/services/railway';
 import { Table, TableBody, TableCell, TableHeader, TableHead, TableRow } from '@/components/ui/table';
-import { Info } from 'lucide-react';
+import { Info, Database } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 interface PricingTableProps {
   product: Product;
@@ -12,9 +13,16 @@ interface PricingTableProps {
 const PricingTable: React.FC<PricingTableProps> = ({ product, onOpenDialog }) => {
   const prices = product.prices || [];
   const eco = product.eco || {};
+  const sourceTable = product.source_table || 'products';
 
   return (
     <div className="w-[380px] flex-shrink-0 mr-3">
+      <div className="mb-2 flex items-center gap-2">
+        <Badge variant="outline" className="bg-blue-100 text-blue-800 text-xs flex items-center gap-1">
+          <Database className="h-3 w-3" />
+          <span className="truncate max-w-[150px]">{sourceTable}</span>
+        </Badge>
+      </div>
       <Table className="w-full bg-white/60 rounded-xl overflow-hidden text-xs shadow-sm">
         <TableHeader className="bg-white/80">
           <TableRow>
@@ -31,7 +39,7 @@ const PricingTable: React.FC<PricingTableProps> = ({ product, onOpenDialog }) =>
               <TableRow key={index} className="border-b border-white/30 hover:bg-white/70">
                 <TableCell className="py-2 px-2 font-medium">{price.type}</TableCell>
                 <TableCell className="py-2 px-2">
-                  {product.stock ? (
+                  {product.stock !== undefined ? (
                     <span className={product.stock > 0 ? "text-green-700 font-medium" : "text-red-600"}>
                       {product.stock}
                     </span>

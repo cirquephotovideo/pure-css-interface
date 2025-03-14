@@ -7,7 +7,7 @@ import BrandDisplay from './info/BrandDisplay';
 import PriceInfoDialog from './PriceInfoDialog';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Database } from 'lucide-react';
+import { Database, Layers } from 'lucide-react';
 
 interface ProductRowProps {
   productGroup: Product[];
@@ -59,8 +59,9 @@ const ProductRow: React.FC<ProductRowProps> = ({ productGroup, onSelectTable }) 
   return (
     <div className="ios-glass p-4 mb-4 animate-fade-in">
       <div className="flex items-center gap-2 mb-4">
-        <Badge variant="outline" className="bg-blue-100 text-blue-800 text-xs px-2 py-0.5">
-          {productGroup.length} fiches produit
+        <Badge variant="outline" className="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 flex items-center gap-1">
+          <Layers className="h-3 w-3" />
+          <span>{productGroup.length} fiches produit</span>
         </Badge>
         <Badge variant="outline" className="bg-gray-100 text-gray-800 text-xs px-2 py-0.5">
           Même code: {activeProduct.barcode || activeProduct.ean || activeProduct.supplier_code}
@@ -72,7 +73,7 @@ const ProductRow: React.FC<ProductRowProps> = ({ productGroup, onSelectTable }) 
           {productGroup.map((product, index) => (
             <TabsTrigger key={index} value={index.toString()} className="flex items-center gap-1">
               <Database className="h-3 w-3" />
-              <span className="truncate max-w-[100px]">{product.source_table}</span>
+              <span className="truncate max-w-[100px]">{product.source_table || 'products'}</span>
             </TabsTrigger>
           ))}
         </TabsList>
