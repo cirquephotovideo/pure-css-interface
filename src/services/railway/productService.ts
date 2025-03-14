@@ -1,3 +1,4 @@
+
 /**
  * Railway DB Product Service
  * Handles product-related database operations
@@ -210,51 +211,57 @@ export async function searchProducts(term: string): Promise<QueryResult<Product>
         
         if (searchableColumns.length > 0) {
           // Map columns based on configuration
-          const hasId = columns.some(c => c.column_name.toLowerCase() === 'id');
-          const hasDescription = columns.some(c => c.column_name.toLowerCase() === 'description');
-          const hasBrand = columns.some(c => c.column_name.toLowerCase() === 'brand');
-          const hasArticleNr = columns.some(c => c.column_name.toLowerCase() === 'articlenr');
-          const hasEan = columns.some(c => c.column_name.toLowerCase() === 'eannr');
-          const hasPrice = columns.some(c => c.column_name.toLowerCase() === 'price');
-          const hasStock = columns.some(c => c.column_name.toLowerCase() === 'stock');
-          const hasLocation = columns.some(c => c.column_name.toLowerCase() === 'stock_location');
-          const hasOem = columns.some(c => c.column_name.toLowerCase() === 'oemnr');
-          const hasCodeArticle = columns.some(c => c.column_name.toLowerCase() === 'code_article');
-          const hasDescriptionOdr = columns.some(c => c.column_name.toLowerCase() === 'description_odr1');
-          
-          // Use column mapping from table config if available
           const columnMapping = tableConfig?.columnMapping || {};
           
-          // Use the column mapping to find the correct field names
-          const mapColumn = (standardField: string, defaultCheck: boolean, defaultColumn: string): string => {
-            // If there's a mapping for this field, use it
-            if (columnMapping[standardField]) {
-              const mappedColumn = columnMapping[standardField];
-              // Check if the mapped column exists in the table
-              const exists = columns.some(c => c.column_name === mappedColumn);
-              return exists ? mappedColumn : 'NULL';
-            }
-            // Otherwise use the default column if it exists
-            return defaultCheck ? defaultColumn : 'NULL';
-          };
-          
-          tableQueries.push(`
-            SELECT 
-              ${mapColumn('id', hasId, 'id')} AS id, 
-              ${mapColumn('reference', hasArticleNr, 'articlenr')} AS reference, 
-              ${mapColumn('barcode', hasEan, 'eannr')} AS barcode, 
-              ${mapColumn('description', hasDescription, 'description')} AS description, 
-              ${mapColumn('brand', hasBrand, 'brand')} AS brand, 
-              ${mapColumn('supplier_code', hasOem, 'oemnr')} AS supplier_code, 
-              ${mapColumn('name', hasDescription, 'description')} AS name, 
-              ${mapColumn('price', hasPrice, 'price')} AS price, 
-              ${mapColumn('stock', hasStock, 'stock')} AS stock, 
-              ${mapColumn('location', hasLocation, 'stock_location')} AS location, 
-              ${mapColumn('ean', hasEan, 'eannr')} AS ean, 
-              '${table.table_name}' AS source_table 
-            FROM "${table.table_name}" 
-            WHERE ${searchableColumns.join(' OR ')}
-          `);
+          // Use column mapping from table config if available
+          if (tableConfig && tableConfig.columnMapping && Object.keys(tableConfig.columnMapping).length > 0) {
+            // Build select query using explicit column mapping
+            const selectFields = standardColumns.map(({ id }) => {
+              const mappedColumn = columnMapping[id];
+              return mappedColumn 
+                ? `${mappedColumn} AS ${id}` 
+                : `NULL AS ${id}`;
+            }).join(', ');
+            
+            tableQueries.push(`
+              SELECT 
+                ${selectFields},
+                '${table.table_name}' AS source_table 
+              FROM "${table.table_name}" 
+              WHERE ${searchableColumns.join(' OR ')}
+            `);
+          } else {
+            // Fallback to automatic column detection if no mapping is defined
+            const hasId = columns.some(c => c.column_name.toLowerCase() === 'id');
+            const hasDescription = columns.some(c => c.column_name.toLowerCase() === 'description');
+            const hasBrand = columns.some(c => c.column_name.toLowerCase() === 'brand');
+            const hasArticleNr = columns.some(c => c.column_name.toLowerCase() === 'articlenr');
+            const hasEan = columns.some(c => c.column_name.toLowerCase() === 'eannr');
+            const hasPrice = columns.some(c => c.column_name.toLowerCase() === 'price');
+            const hasStock = columns.some(c => c.column_name.toLowerCase() === 'stock');
+            const hasLocation = columns.some(c => c.column_name.toLowerCase() === 'stock_location');
+            const hasOem = columns.some(c => c.column_name.toLowerCase() === 'oemnr');
+            const hasCodeArticle = columns.some(c => c.column_name.toLowerCase() === 'code_article');
+            const hasDescriptionOdr = columns.some(c => c.column_name.toLowerCase() === 'description_odr1');
+            
+            tableQueries.push(`
+              SELECT 
+                ${hasId ? 'id' : 'NULL'} AS id, 
+                ${hasArticleNr ? 'articlenr' : hasCodeArticle ? 'code_article' : 'NULL'} AS reference, 
+                ${hasEan ? 'eannr' : 'NULL'} AS barcode, 
+                ${hasDescription ? 'description' : hasDescriptionOdr ? 'description_odr1' : 'NULL'} AS description, 
+                ${hasBrand ? 'brand' : 'NULL'} AS brand, 
+                ${hasOem ? 'oemnr' : 'NULL'} AS supplier_code, 
+                ${hasDescription ? 'description' : 'NULL'} AS name, 
+                ${hasPrice ? 'price' : 'NULL'} AS price, 
+                ${hasStock ? 'stock' : 'NULL'} AS stock, 
+                ${hasLocation ? 'stock_location' : 'NULL'} AS location, 
+                ${hasEan ? 'eannr' : 'NULL'} AS ean, 
+                '${table.table_name}' AS source_table 
+              FROM "${table.table_name}" 
+              WHERE ${searchableColumns.join(' OR ')}
+            `);
+          }
         }
       }
     }
@@ -325,3 +332,6 @@ export async function searchProducts(term: string): Promise<QueryResult<Product>
     };
   }
 }
+
+// Helper array of standard column IDs
+const standardColumns = ['id', 'reference', 'barcode', 'description', 'brand', 'supplier_code', 'name', 'price', 'stock', 'location', 'ean'];

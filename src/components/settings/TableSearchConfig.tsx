@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -510,7 +509,6 @@ const TableSearchConfig: React.FC<TableSearchConfigProps> = ({
                               onCheckedChange={() => toggleTableEnabled(config.name)}
                               onClick={(e) => e.stopPropagation()}
                             />
-                            {/* Changed from truncate to break-words for multiple lines */}
                             <span className={`${config.enabled ? "font-medium" : "opacity-70"} break-words w-full`}>
                               {config.name}
                             </span>
