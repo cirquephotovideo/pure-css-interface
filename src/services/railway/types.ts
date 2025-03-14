@@ -20,6 +20,10 @@ export interface Product {
   eco?: {
     [key: string]: number;
   };
+  // Additional fields for extended search
+  name?: string;
+  supplier_code?: string;
+  ean?: string;
   // Additional fields that might be in products
   sku?: string;
   stock?: number;

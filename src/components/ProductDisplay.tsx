@@ -99,6 +99,18 @@ const ProductRow: React.FC<{
                   <p className="text-xs opacity-70">Emplacement</p>
                   <p className="font-medium">{product.location}</p>
                 </div>
+                {product.supplier_code && (
+                  <div className="bg-gray-50 p-3 rounded-md shadow-sm">
+                    <p className="text-xs opacity-70">Code fournisseur</p>
+                    <p className="font-medium">{product.supplier_code}</p>
+                  </div>
+                )}
+                {product.ean && (
+                  <div className="bg-gray-50 p-3 rounded-md shadow-sm">
+                    <p className="text-xs opacity-70">EAN</p>
+                    <p className="font-medium">{product.ean}</p>
+                  </div>
+                )}
                 {product.source_table && (
                   <div className="bg-gray-50 p-3 rounded-md shadow-sm col-span-2">
                     <p className="text-xs opacity-70">Source</p>
@@ -139,8 +151,12 @@ const ProductRow: React.FC<{
               </span>
             )}
           </div>
-          <div className="text-xs opacity-70 mb-1">◼ {product.barcode}</div>
-          <div className="text-sm leading-tight">{product.description}</div>
+          <div className="text-xs opacity-70 mb-1">
+            <span className="mr-2">◼ {product.barcode}</span>
+            {product.ean && <span className="mr-2">EAN: {product.ean}</span>}
+            {product.supplier_code && <span>Fournisseur: {product.supplier_code}</span>}
+          </div>
+          <div className="text-sm leading-tight">{product.name || product.description}</div>
         </div>
         
         <div className="flex items-center gap-2">

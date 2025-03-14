@@ -1,10 +1,11 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
-import { Search, X } from 'lucide-react';
+import { Search, X, Terminal } from 'lucide-react';
+import { getLogBuffer, LogLevel } from '@/services/railway/logger';
 
 interface SearchBarProps {
   className?: string;
@@ -20,6 +21,21 @@ const SearchBar: React.FC<SearchBarProps> = ({
   hasError = false 
 }) => {
   const [query, setQuery] = useState('');
+  const [logs, setLogs] = useState<Array<{level: LogLevel, message: string, timestamp: string}>>([]);
+  
+  // Poll logs every second when searching
+  useEffect(() => {
+    if (isLoading) {
+      const interval = setInterval(() => {
+        setLogs(getLogBuffer());
+      }, 1000);
+      
+      return () => clearInterval(interval);
+    } else {
+      // Get logs once more when loading completes
+      setLogs(getLogBuffer());
+    }
+  }, [isLoading]);
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,12 +44,22 @@ const SearchBar: React.FC<SearchBarProps> = ({
     }
   };
   
+  // Format the timestamp to be more readable
+  const formatTimestamp = (timestamp: string) => {
+    try {
+      const date = new Date(timestamp);
+      return date.toLocaleTimeString();
+    } catch (e) {
+      return timestamp;
+    }
+  };
+  
   return (
     <div className={cn("w-full space-y-4", className)}>
       <div className="space-y-2">
         <h2 className="text-lg font-medium">Recherche parmi les produits</h2>
         <p className="text-sm text-muted-foreground">
-          Recherchez par référence, code-barres, description ou marque
+          Recherchez par référence, code-barres, EAN, nom, fournisseur ou description
         </p>
       </div>
       
@@ -66,6 +92,29 @@ const SearchBar: React.FC<SearchBarProps> = ({
           <div className="py-2">
             <Progress value={75} className="h-1" />
             <p className="text-xs text-muted-foreground mt-1 animate-pulse">Recherche en cours...</p>
+            
+            {/* Log display area */}
+            <div className="mt-2 bg-black/80 text-green-400 p-2 rounded font-mono text-xs h-24 overflow-y-auto">
+              <div className="flex items-center mb-1 opacity-70">
+                <Terminal className="h-3 w-3 mr-1" />
+                <span>Logs en direct</span>
+              </div>
+              {logs.length > 0 ? (
+                logs.map((log, index) => (
+                  <div key={index} className={cn(
+                    "text-xs font-mono",
+                    log.level === LogLevel.ERROR && "text-red-400",
+                    log.level === LogLevel.WARN && "text-yellow-400",
+                    log.level === LogLevel.INFO && "text-blue-400",
+                    log.level === LogLevel.DEBUG && "text-green-400"
+                  )}>
+                    <span className="opacity-70">[{formatTimestamp(log.timestamp)}]</span> {log.message}
+                  </div>
+                ))
+              ) : (
+                <div className="opacity-50">En attente de logs...</div>
+              )}
+            </div>
           </div>
         )}
         

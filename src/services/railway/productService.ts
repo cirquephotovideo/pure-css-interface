@@ -4,6 +4,7 @@
  */
 import { Product, QueryResult } from "./types";
 import { executeRailwayQuery } from "./queryService";
+import { LogLevel, addToLogBuffer, clearLogBuffer } from "./logger";
 
 /**
  * Fetch products from Railway database (products table)
@@ -25,6 +26,10 @@ export async function fetchProducts(): Promise<QueryResult<Product>> {
  * @returns List of matching products
  */
 export async function searchProducts(searchTerm: string): Promise<QueryResult<Product>> {
+  // Clear previous log buffer when starting a new search
+  clearLogBuffer();
+  addToLogBuffer(LogLevel.INFO, `Début de recherche pour: "${searchTerm}"`);
+  
   const searchPattern = `%${searchTerm}%`;
   
   // First, get a list of all tables starting with 'raw_'
@@ -37,24 +42,37 @@ export async function searchProducts(searchTerm: string): Promise<QueryResult<Pr
   
   try {
     // Get all raw_ tables
+    addToLogBuffer(LogLevel.DEBUG, "Recherche des tables raw_* disponibles");
     const tablesResult = await executeRailwayQuery<{table_name: string}>(getTablesQuery);
     const rawTables = tablesResult.data || [];
     
     if (rawTables.length === 0) {
-      console.log("No raw_ tables found, searching only in products table");
+      addToLogBuffer(LogLevel.WARN, "Aucune table raw_* trouvée, recherche uniquement dans la table products");
       // If no raw_ tables found, just search in products
       const productsQuery = `
         SELECT * FROM products 
         WHERE 
           reference ILIKE $1 OR 
           barcode ILIKE $1 OR 
+          name ILIKE $1 OR
+          supplier_code ILIKE $1 OR
+          ean ILIKE $1 OR
           description ILIKE $1 OR
           brand ILIKE $1
         ORDER BY reference ASC 
         LIMIT 20
       `;
       
-      return executeRailwayQuery<Product>(productsQuery, [searchPattern]);
+      addToLogBuffer(LogLevel.DEBUG, "Exécution de la recherche dans products");
+      const result = await executeRailwayQuery<Product>(productsQuery, [searchPattern]);
+      
+      if (result.data && result.data.length > 0) {
+        addToLogBuffer(LogLevel.INFO, `${result.data.length} produit(s) trouvé(s) dans products`);
+      } else {
+        addToLogBuffer(LogLevel.INFO, "Aucun produit trouvé dans products");
+      }
+      
+      return result;
     }
     
     // Build UNION query to search across all relevant tables
@@ -62,6 +80,7 @@ export async function searchProducts(searchTerm: string): Promise<QueryResult<Pr
     const tableQueries = [];
     
     // Add products table query
+    addToLogBuffer(LogLevel.DEBUG, "Création de la requête pour la table products");
     tableQueries.push(`
       SELECT 
         id,
@@ -74,17 +93,25 @@ export async function searchProducts(searchTerm: string): Promise<QueryResult<Pr
         catalog,
         prices,
         eco,
+        name,
+        supplier_code,
+        ean,
         'products' as source_table
       FROM products 
       WHERE 
         reference ILIKE $1 OR 
         barcode ILIKE $1 OR 
+        name ILIKE $1 OR
+        supplier_code ILIKE $1 OR
+        ean ILIKE $1 OR
         description ILIKE $1 OR
         brand ILIKE $1
     `);
     
     // Add queries for each raw_ table
+    addToLogBuffer(LogLevel.DEBUG, `Création de requêtes pour ${rawTables.length} tables raw_*`);
     rawTables.forEach(table => {
+      addToLogBuffer(LogLevel.DEBUG, `Ajout de la table ${table.table_name} à la recherche`);
       tableQueries.push(`
         SELECT 
           id::text as id,
@@ -97,11 +124,17 @@ export async function searchProducts(searchTerm: string): Promise<QueryResult<Pr
           catalog::text as catalog,
           COALESCE(prices, '[]'::jsonb) as prices,
           COALESCE(eco, '{}'::jsonb) as eco,
+          name::text as name,
+          supplier_code::text as supplier_code,
+          ean::text as ean,
           '${table.table_name}' as source_table
         FROM ${table.table_name}
         WHERE 
           reference::text ILIKE $1 OR 
           barcode::text ILIKE $1 OR 
+          name::text ILIKE $1 OR
+          supplier_code::text ILIKE $1 OR
+          ean::text ILIKE $1 OR
           description::text ILIKE $1 OR
           brand::text ILIKE $1
       `);
@@ -113,18 +146,41 @@ export async function searchProducts(searchTerm: string): Promise<QueryResult<Pr
     // Add ordering and limit
     unionQuery += ` ORDER BY reference ASC LIMIT 20`;
     
-    console.log("Executing multi-table search with query:", unionQuery);
-    return executeRailwayQuery<Product>(unionQuery, [searchPattern]);
+    addToLogBuffer(LogLevel.INFO, `Exécution de la recherche dans ${rawTables.length + 1} tables`);
+    const result = await executeRailwayQuery<Product>(unionQuery, [searchPattern]);
+    
+    if (result.data && result.data.length > 0) {
+      // Count results by source table
+      const resultsByTable = result.data.reduce((acc, product) => {
+        const source = product.source_table || 'unknown';
+        acc[source] = (acc[source] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+      
+      // Log results breakdown
+      Object.entries(resultsByTable).forEach(([table, count]) => {
+        addToLogBuffer(LogLevel.INFO, `${count} produit(s) trouvé(s) dans la table ${table}`);
+      });
+    } else {
+      addToLogBuffer(LogLevel.WARN, "Aucun produit trouvé dans toutes les tables");
+    }
+    
+    return result;
     
   } catch (error) {
-    console.error("Error searching across tables:", error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    addToLogBuffer(LogLevel.ERROR, `Erreur lors de la recherche: ${errorMessage}`);
     
     // Fallback to just products table if there's an error
+    addToLogBuffer(LogLevel.WARN, "Tentative de repli sur la table products uniquement");
     const fallbackQuery = `
       SELECT * FROM products 
       WHERE 
         reference ILIKE $1 OR 
         barcode ILIKE $1 OR 
+        name ILIKE $1 OR
+        supplier_code ILIKE $1 OR
+        ean ILIKE $1 OR
         description ILIKE $1 OR
         brand ILIKE $1
       ORDER BY reference ASC 
