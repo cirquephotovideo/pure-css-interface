@@ -1,8 +1,10 @@
+
 import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableHeader, TableHead, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Info } from 'lucide-react';
+
 interface Product {
   id: string;
   reference: string;
@@ -20,10 +22,12 @@ interface Product {
     [key: string]: number;
   };
 }
+
 interface ProductDisplayProps {
   products: Product[];
   className?: string;
 }
+
 const ProductRow: React.FC<{
   product: Product;
 }> = ({
@@ -134,6 +138,7 @@ const ProductRow: React.FC<{
       </div>
     </div>;
 };
+
 const ProductDisplay: React.FC<ProductDisplayProps> = ({
   products,
   className
@@ -150,7 +155,7 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
         </div>
         
         <button className="ios-button text-sm">
-          Voir stock et prix (3)
+          Voir stock et prix ({products.length})
         </button>
       </div>
       
@@ -159,8 +164,9 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
       </div>
       
       <div className="text-sm opacity-70 py-4 text-center">
-        1 sur 2
+        {products.length > 0 ? `1 sur ${Math.ceil(products.length / 10)}` : 'Aucun résultat'}
       </div>
     </div>;
 };
+
 export default ProductDisplay;

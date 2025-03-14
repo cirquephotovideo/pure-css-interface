@@ -1,63 +1,41 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import Sidebar from '@/components/Sidebar';
 import SearchBar from '@/components/SearchBar';
 import ProductDisplay from '@/components/ProductDisplay';
+import { fetchProducts, searchProducts } from '@/services/railwayDB';
+import { toast } from 'sonner';
 
-// Mock data for our products
-const mockProducts = [{
-  id: '1',
-  reference: 'TQ77S95DATXXC',
-  barcode: '8806095486086',
-  description: 'TV 77 OLED TV OLED, 3840x2160, 120Hz, HDR10+, Boîtier déporté One Connect, Surface mate Anti-reflet, Tizen 8.0, NQ4 AI Gen2 Processor, Pied central Vesa 400x400, 4xHDMI, 3xUSB, Smart TV, Airplay 2, Dolby Atmos, Audio 70W',
-  brand: 'SAMSUNG',
-  location: '52GJ',
-  imageUrl: '',
-  catalog: 'digitalpro',
-  prices: [{
-    type: 'digital/pro',
-    value: 2043.36
-  }, {
-    type: 'pactenet/pro',
-    value: 2157.46
-  }, {
-    type: 'fvs/pro',
-    value: 2416.00
-  }],
-  eco: {
-    'digital/pro': 17.51,
-    'pactenet/pro': 14.59,
-    'fvs/pro': 0
-  }
-}, {
-  id: '2',
-  reference: 'TQ77S90DAEXXC',
-  barcode: '8806095568898',
-  description: 'TV 77 OLED TV OLED, 3840x2160, 120Hz, HDR10+, Tizen 8.0, NQ4 AI Gen2 Processor, Pied central Vesa 400x300, 4xHDMI, 2xUSB, Airplay 2, Dolby Atmos, Audio 40W',
-  brand: 'SAMSUNG',
-  location: '42J4',
-  imageUrl: '',
-  catalog: 'digitalpro',
-  prices: [{
-    type: 'digital/pro',
-    value: 1843.36
-  }, {
-    type: 'pactenet/pro',
-    value: 1957.46
-  }],
-  eco: {
-    'digital/pro': 15.20,
-    'pactenet/pro': 12.80
-  }
-}];
 const Index = () => {
-  const [products, setProducts] = useState(mockProducts);
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // Fetch products based on search query or get all products
+  const { data: productsData, isLoading, error } = useQuery({
+    queryKey: ['products', searchQuery],
+    queryFn: () => searchQuery 
+      ? searchProducts(searchQuery) 
+      : fetchProducts(),
+    staleTime: 60 * 1000, // 1 minute
+  });
+
+  // Get products from the query result or use empty array
+  const products = productsData?.data || [];
+
+  useEffect(() => {
+    if (error) {
+      console.error('Error fetching products:', error);
+      toast.error("Erreur lors de la récupération des produits");
+    }
+  }, [error]);
+
   const handleSearch = (query: string) => {
     setSearchQuery(query);
-    // In a real application, this would filter products or make an API call
     console.log('Searching for:', query);
   };
-  return <div className="flex w-full h-screen overflow-hidden animate-fade-in">
+
+  return (
+    <div className="flex w-full h-screen overflow-hidden animate-fade-in">
       <Sidebar />
       
       <main className="flex-1 flex flex-col h-screen overflow-hidden">
@@ -90,17 +68,28 @@ const Index = () => {
             </div>
             
             <div className="ios-glass p-6 rounded-[20px] mb-6 animate-scale-in">
-              <ProductDisplay products={products} />
+              {isLoading ? (
+                <div className="flex justify-center p-12">
+                  <div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div>
+                </div>
+              ) : (
+                <ProductDisplay products={products} />
+              )}
             </div>
           </div>
         </div>
         
         <footer className="ios-glass p-4 mb-2 mx-2 rounded-xl text-xs opacity-70 flex justify-between items-center">
-          <div>12/03/2023, 16:16</div>
           <div>
-        </div>
+            {new Date().toLocaleDateString('fr-FR')}, {new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+          </div>
+          <div>
+            {products.length} produit(s)
+          </div>
         </footer>
       </main>
-    </div>;
+    </div>
+  );
 };
+
 export default Index;
