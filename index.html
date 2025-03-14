@@ -1,18 +1,304 @@
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>pure-css-interface</title>
-    <meta name="description" content="Lovable Generated Project" />
-    <meta name="author" content="Lovable" />
-    <meta property="og:image" content="/og-image.png" />
+    <title>Colbee Hive</title>
+    <meta name="description" content="Colbee Hive Product Catalog" />
+    <link rel="stylesheet" href="/src/styles.css">
   </head>
 
   <body>
-    <div id="root"></div>
-    <!-- IMPORTANT: DO NOT REMOVE THIS SCRIPT TAG OR THIS VERY COMMENT! -->
-    <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
-    <script type="module" src="/src/main.tsx"></script>
+    <div class="app-container">
+      <aside class="sidebar">
+        <div class="sidebar-header">
+          <h1>Colbee Hive</h1>
+        </div>
+        
+        <div class="sidebar-menu-label">MENU</div>
+        
+        <nav class="sidebar-nav">
+          <div class="sidebar-item active">
+            <span class="sidebar-icon">📦</span>
+            <span>Produits</span>
+          </div>
+          <div class="sidebar-item">
+            <span class="sidebar-icon">📑</span>
+            <span>Catalogues</span>
+          </div>
+          <div class="sidebar-item">
+            <span class="sidebar-icon">🏷️</span>
+            <span>Marques</span>
+          </div>
+          <div class="sidebar-item">
+            <span class="sidebar-icon">📊</span>
+            <span>Activités</span>
+          </div>
+        </nav>
+        
+        <div class="sidebar-settings">
+          <div class="setting-row">
+            <span>Mode sombre</span>
+            <label class="toggle-switch">
+              <input type="checkbox">
+              <span class="slider"></span>
+            </label>
+          </div>
+          
+          <div class="setting-row">
+            <span>Notifications</span>
+            <label class="toggle-switch">
+              <input type="checkbox" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+        
+        <div class="sidebar-footer">
+          Version 1.0.0
+        </div>
+      </aside>
+
+      <main class="main-content">
+        <header class="header">
+          <div class="header-left">
+            <button class="menu-button">≡</button>
+            <h2>Planète Technologie</h2>
+          </div>
+          
+          <button class="settings-button">⚙</button>
+        </header>
+        
+        <div class="content-wrapper">
+          <nav class="nav-tabs">
+            <div class="tab-item active">Recherche</div>
+            <div class="tab-item">Tableau de bord</div>
+          </nav>
+          
+          <div class="search-container">
+            <div class="search-header">
+              <h2>Recherche parmi les produits</h2>
+              <p>Pour faire une recherche exacte, placer des guillemets autour du terme à rechercher.</p>
+            </div>
+            
+            <form class="search-form">
+              <div class="search-input-container">
+                <span class="search-icon">🔍</span>
+                <input 
+                  type="text" 
+                  class="search-input" 
+                  placeholder="tq77s95d"
+                >
+                <span class="mic-icon">🎤</span>
+              </div>
+              
+              <div class="search-buttons">
+                <button type="button" class="option-button">Options ...</button>
+                <button type="submit" class="search-button">Rechercher</button>
+              </div>
+            </form>
+          </div>
+          
+          <div class="products-container">
+            <h2>Résultats de recherche</h2>
+            
+            <div class="product-list">
+              <!-- Product 1 -->
+              <div class="product-item">
+                <div class="product-info-table">
+                  <table>
+                    <tr>
+                      <td>Catalog</td>
+                      <td>digitalpro</td>
+                    </tr>
+                    <tr>
+                      <td>Stock</td>
+                      <td>4</td>
+                    </tr>
+                    <tr>
+                      <td>PA HT</td>
+                      <td>2043.36€</td>
+                    </tr>
+                    <tr>
+                      <td>Eco</td>
+                      <td>17.51€</td>
+                    </tr>
+                  </table>
+                  <button class="info-button" onclick="openProductDialog('product1')">ℹ️</button>
+                </div>
+                
+                <div class="product-details">
+                  <div class="product-header">
+                    <h3>TQ77S95DATXXC</h3>
+                    <span class="product-barcode">8806095486086</span>
+                  </div>
+                  
+                  <p class="product-description">
+                    TV 77 OLED TV OLED, 3840x2160, 120Hz, HDR10+, Boîtier déporté One Connect, Surface mate Anti-reflet, Tizen 8.0, NQ4 AI Gen2 Processor, Pied central Vesa 400x400, 4xHDMI, 3xUSB, Smart TV, Airplay 2, Dolby Atmos, Audio 70W
+                  </p>
+                  
+                  <div class="product-meta">
+                    <span class="product-brand">SAMSUNG</span>
+                    <span class="product-location">Location: 52GJ</span>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Product 2 -->
+              <div class="product-item">
+                <div class="product-info-table">
+                  <table>
+                    <tr>
+                      <td>Catalog</td>
+                      <td>digitalpro</td>
+                    </tr>
+                    <tr>
+                      <td>Stock</td>
+                      <td>2</td>
+                    </tr>
+                    <tr>
+                      <td>PA HT</td>
+                      <td>1843.36€</td>
+                    </tr>
+                    <tr>
+                      <td>Eco</td>
+                      <td>15.20€</td>
+                    </tr>
+                  </table>
+                  <button class="info-button" onclick="openProductDialog('product2')">ℹ️</button>
+                </div>
+                
+                <div class="product-details">
+                  <div class="product-header">
+                    <h3>TQ77S90DAEXXC</h3>
+                    <span class="product-barcode">8806095568898</span>
+                  </div>
+                  
+                  <p class="product-description">
+                    TV 77 OLED TV OLED, 3840x2160, 120Hz, HDR10+, Tizen 8.0, NQ4 AI Gen2 Processor, Pied central Vesa 400x300, 4xHDMI, 2xUSB, Airplay 2, Dolby Atmos, Audio 40W
+                  </p>
+                  
+                  <div class="product-meta">
+                    <span class="product-brand">SAMSUNG</span>
+                    <span class="product-location">Location: 42J4</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <footer class="footer">
+          <div>12/03/2023, 16:16</div>
+          <div></div>
+        </footer>
+      </main>
+    </div>
+    
+    <!-- Product Dialogs -->
+    <div id="product1" class="product-dialog">
+      <div class="dialog-content">
+        <div class="dialog-header">
+          <h3>Détails du produit: TQ77S95DATXXC</h3>
+          <button class="close-button" onclick="closeProductDialog('product1')">×</button>
+        </div>
+        <div class="dialog-body">
+          <table class="product-details-table">
+            <tr>
+              <th>Référence</th>
+              <td>TQ77S95DATXXC</td>
+            </tr>
+            <tr>
+              <th>Code-barre</th>
+              <td>8806095486086</td>
+            </tr>
+            <tr>
+              <th>Marque</th>
+              <td>SAMSUNG</td>
+            </tr>
+            <tr>
+              <th>Emplacement</th>
+              <td>52GJ</td>
+            </tr>
+            <tr>
+              <th>Description</th>
+              <td>TV 77 OLED TV OLED, 3840x2160, 120Hz, HDR10+, Boîtier déporté One Connect, Surface mate Anti-reflet, Tizen 8.0, NQ4 AI Gen2 Processor, Pied central Vesa 400x400, 4xHDMI, 3xUSB, Smart TV, Airplay 2, Dolby Atmos, Audio 70W</td>
+            </tr>
+            <tr>
+              <th>Catalogue</th>
+              <td>digitalpro</td>
+            </tr>
+            <tr>
+              <th>Digital/Pro</th>
+              <td>2043.36€ (Eco: 17.51€)</td>
+            </tr>
+            <tr>
+              <th>Pactenet/Pro</th>
+              <td>2157.46€ (Eco: 14.59€)</td>
+            </tr>
+            <tr>
+              <th>FVS/Pro</th>
+              <td>2416.00€ (Eco: 0€)</td>
+            </tr>
+          </table>
+        </div>
+      </div>
+    </div>
+    
+    <div id="product2" class="product-dialog">
+      <div class="dialog-content">
+        <div class="dialog-header">
+          <h3>Détails du produit: TQ77S90DAEXXC</h3>
+          <button class="close-button" onclick="closeProductDialog('product2')">×</button>
+        </div>
+        <div class="dialog-body">
+          <table class="product-details-table">
+            <tr>
+              <th>Référence</th>
+              <td>TQ77S90DAEXXC</td>
+            </tr>
+            <tr>
+              <th>Code-barre</th>
+              <td>8806095568898</td>
+            </tr>
+            <tr>
+              <th>Marque</th>
+              <td>SAMSUNG</td>
+            </tr>
+            <tr>
+              <th>Emplacement</th>
+              <td>42J4</td>
+            </tr>
+            <tr>
+              <th>Description</th>
+              <td>TV 77 OLED TV OLED, 3840x2160, 120Hz, HDR10+, Tizen 8.0, NQ4 AI Gen2 Processor, Pied central Vesa 400x300, 4xHDMI, 2xUSB, Airplay 2, Dolby Atmos, Audio 40W</td>
+            </tr>
+            <tr>
+              <th>Catalogue</th>
+              <td>digitalpro</td>
+            </tr>
+            <tr>
+              <th>Digital/Pro</th>
+              <td>1843.36€ (Eco: 15.20€)</td>
+            </tr>
+            <tr>
+              <th>Pactenet/Pro</th>
+              <td>1957.46€ (Eco: 12.80€)</td>
+            </tr>
+          </table>
+        </div>
+      </div>
+    </div>
+    
+    <script>
+      function openProductDialog(id) {
+        document.getElementById(id).style.display = 'flex';
+      }
+      
+      function closeProductDialog(id) {
+        document.getElementById(id).style.display = 'none';
+      }
+    </script>
   </body>
 </html>
