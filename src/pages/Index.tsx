@@ -83,7 +83,11 @@ const Index = () => {
             </nav>
             
             <div className="ios-glass p-6 rounded-[20px] mb-6 animate-slide-in">
-              <SearchBar onSearch={handleSearch} />
+              <SearchBar 
+                onSearch={handleSearch}
+                isLoading={isLoading}
+                hasError={isError || !!productsData?.error}
+              />
             </div>
             
             <div className="ios-glass p-6 rounded-[20px] mb-6 animate-scale-in">
