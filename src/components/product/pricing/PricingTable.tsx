@@ -42,10 +42,18 @@ const PricingTable: React.FC<PricingTableProps> = ({ product, onOpenDialog }) =>
                     </span>
                   ) : "N/D"}
                 </TableCell>
-                <TableCell className="py-2 px-2 font-medium">{price.value.toFixed(2)} €</TableCell>
+                <TableCell className="py-2 px-2 font-medium">
+                  {typeof price.value === 'number' 
+                    ? price.value.toFixed(2) 
+                    : price.value} €
+                </TableCell>
                 <TableCell className="py-2 px-2">
                   {eco && eco[price.type] ? (
-                    <span className="text-blue-600">{eco[price.type].toFixed(2)} €</span>
+                    <span className="text-blue-600">
+                      {typeof eco[price.type] === 'number' 
+                        ? eco[price.type].toFixed(2) 
+                        : eco[price.type]} €
+                    </span>
                   ) : "N/D"}
                 </TableCell>
                 <TableCell className="py-2 px-2 text-center">
