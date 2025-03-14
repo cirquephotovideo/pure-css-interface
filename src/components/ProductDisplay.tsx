@@ -35,27 +35,27 @@ const ProductRow: React.FC<{
   };
   return <div className="ios-glass flex items-center gap-4 p-4 mb-4 animate-fade-in">
       <div className="w-[340px] flex-shrink-0 mr-3">
-        <Table className="w-full bg-white/20 rounded-xl overflow-hidden text-xs">
-          <TableHeader className="bg-white/30">
+        <Table className="w-full bg-white/60 rounded-xl overflow-hidden text-xs shadow-sm">
+          <TableHeader className="bg-white/80">
             <TableRow>
-              <TableHead className="h-8 px-2 text-xs font-medium">Catalogue</TableHead>
-              <TableHead className="h-8 px-2 text-xs font-medium">Stock</TableHead>
-              <TableHead className="h-8 px-2 text-xs font-medium">PA HT</TableHead>
-              <TableHead className="h-8 px-2 text-xs font-medium">Eco</TableHead>
-              <TableHead className="h-8 w-8 px-2 text-xs font-medium">...</TableHead>
+              <TableHead className="h-8 px-2 text-xs font-semibold text-black">Catalogue</TableHead>
+              <TableHead className="h-8 px-2 text-xs font-semibold text-black">Stock</TableHead>
+              <TableHead className="h-8 px-2 text-xs font-semibold text-black">PA HT</TableHead>
+              <TableHead className="h-8 px-2 text-xs font-semibold text-black">Eco</TableHead>
+              <TableHead className="h-8 w-8 px-2 text-xs font-semibold text-black">...</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {product.prices.map((price, index) => <TableRow key={index} className="border-b border-white/10">
-                <TableCell className="py-1 px-2">{price.type}</TableCell>
-                <TableCell className="py-1 px-2"></TableCell>
-                <TableCell className="py-1 px-2">{price.value.toFixed(2)}</TableCell>
-                <TableCell className="py-1 px-2">
+            {product.prices.map((price, index) => <TableRow key={index} className="border-b border-white/30 hover:bg-white/70">
+                <TableCell className="py-2 px-2 font-medium">{price.type}</TableCell>
+                <TableCell className="py-2 px-2"></TableCell>
+                <TableCell className="py-2 px-2 font-medium">{price.value.toFixed(2)}</TableCell>
+                <TableCell className="py-2 px-2">
                   {product.eco && product.eco[price.type] ? product.eco[price.type].toFixed(2) : ''}
                 </TableCell>
-                <TableCell className="py-1 px-2 text-center">
-                  <button onClick={() => handleOpenDialog(price.type)} className="cursor-pointer hover:bg-white/20 rounded-full p-1 transition-colors">
-                    <Info className="h-3 w-3" />
+                <TableCell className="py-2 px-2 text-center">
+                  <button onClick={() => handleOpenDialog(price.type)} className="cursor-pointer hover:bg-white/90 rounded-full p-1 transition-colors">
+                    <Info className="h-4 w-4 text-black/70" />
                   </button>
                 </TableCell>
               </TableRow>)}
@@ -65,38 +65,38 @@ const ProductRow: React.FC<{
       
       {/* Price Info Dialog */}
       {product.prices.map((price, index) => <Dialog key={index} open={openInfoDialog === price.type} onOpenChange={() => setOpenInfoDialog(null)}>
-          <DialogContent className="ios-glass max-w-md">
+          <DialogContent className="bg-white max-w-md">
             <DialogHeader>
               <DialogTitle className="text-center">Détails du Prix - {price.type}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-3">
               <div className="grid grid-cols-2 gap-2">
-                <div className="bg-white p-3 rounded-md shadow-sm">
+                <div className="bg-gray-50 p-3 rounded-md shadow-sm">
                   <p className="text-xs opacity-70">Référence</p>
                   <p className="font-medium">{product.reference}</p>
                 </div>
-                <div className="bg-white p-3 rounded-md shadow-sm">
+                <div className="bg-gray-50 p-3 rounded-md shadow-sm">
                   <p className="text-xs opacity-70">Catalogue</p>
                   <p className="font-medium">{price.type}</p>
                 </div>
-                <div className="bg-white p-3 rounded-md shadow-sm">
+                <div className="bg-gray-50 p-3 rounded-md shadow-sm">
                   <p className="text-xs opacity-70">Prix d'achat HT</p>
                   <p className="font-medium">{price.value.toFixed(2)} €</p>
                 </div>
-                <div className="bg-white p-3 rounded-md shadow-sm">
+                <div className="bg-gray-50 p-3 rounded-md shadow-sm">
                   <p className="text-xs opacity-70">Eco-participation</p>
                   <p className="font-medium">{product.eco && product.eco[price.type] ? product.eco[price.type].toFixed(2) : '0.00'} €</p>
                 </div>
-                <div className="bg-white p-3 rounded-md shadow-sm">
+                <div className="bg-gray-50 p-3 rounded-md shadow-sm">
                   <p className="text-xs opacity-70">Marque</p>
                   <p className="font-medium">{product.brand}</p>
                 </div>
-                <div className="bg-white p-3 rounded-md shadow-sm">
+                <div className="bg-gray-50 p-3 rounded-md shadow-sm">
                   <p className="text-xs opacity-70">Emplacement</p>
                   <p className="font-medium">{product.location}</p>
                 </div>
               </div>
-              <div className="bg-white p-3 rounded-md shadow-sm">
+              <div className="bg-gray-50 p-3 rounded-md shadow-sm">
                 <p className="text-xs opacity-70">Description</p>
                 <p className="text-sm">{product.description}</p>
               </div>
@@ -111,7 +111,7 @@ const ProductRow: React.FC<{
       </div>
       
       <div className="flex gap-4 items-center flex-1">
-        <div className="w-20 h-16 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
+        <div className="w-20 h-16 bg-white/50 rounded-xl flex items-center justify-center flex-shrink-0">
           <img src={product.imageUrl || "public/placeholder.svg"} alt={product.reference} className="max-w-full max-h-full object-contain" />
         </div>
         
