@@ -16,10 +16,15 @@ const mockProducts = [
     imageUrl: '',
     catalog: 'digitalpro',
     prices: [
-      { type: 'digitalpro', value: 2043.36 },
-      { type: 'pacenet/pro', value: 2157.46 },
+      { type: 'digital/pro', value: 2043.36 },
+      { type: 'pactenet/pro', value: 2157.46 },
       { type: 'fvs/pro', value: 2416.00 }
-    ]
+    ],
+    eco: {
+      'digital/pro': 17.51,
+      'pactenet/pro': 14.59,
+      'fvs/pro': 0
+    }
   },
   {
     id: '2',
@@ -31,9 +36,13 @@ const mockProducts = [
     imageUrl: '',
     catalog: 'digitalpro',
     prices: [
-      { type: 'digitalpro', value: 1843.36 },
-      { type: 'pacenet/pro', value: 1957.46 }
-    ]
+      { type: 'digital/pro', value: 1843.36 },
+      { type: 'pactenet/pro', value: 1957.46 }
+    ],
+    eco: {
+      'digital/pro': 15.20,
+      'pactenet/pro': 12.80
+    }
   }
 ];
 

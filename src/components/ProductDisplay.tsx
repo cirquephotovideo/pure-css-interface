@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { cn } from '@/lib/utils';
+import { Table, TableBody, TableCell, TableHeader, TableHead, TableRow } from '@/components/ui/table';
 
 interface Product {
   id: string;
@@ -15,6 +16,9 @@ interface Product {
     type: string;
     value: number;
   }[];
+  eco?: {
+    [key: string]: number;
+  };
 }
 
 interface ProductDisplayProps {
@@ -25,6 +29,33 @@ interface ProductDisplayProps {
 const ProductRow: React.FC<{ product: Product }> = ({ product }) => {
   return (
     <div className="ios-glass flex items-center gap-4 p-4 mb-4 animate-fade-in">
+      <div className="w-[340px] flex-shrink-0 mr-3">
+        <Table className="w-full bg-white/20 rounded-xl overflow-hidden text-xs">
+          <TableHeader className="bg-white/30">
+            <TableRow>
+              <TableHead className="h-8 px-2 text-xs font-medium">Catalogue</TableHead>
+              <TableHead className="h-8 px-2 text-xs font-medium">Stock</TableHead>
+              <TableHead className="h-8 px-2 text-xs font-medium">PA HT</TableHead>
+              <TableHead className="h-8 px-2 text-xs font-medium">Eco</TableHead>
+              <TableHead className="h-8 w-8 px-2 text-xs font-medium">...</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {product.prices.map((price, index) => (
+              <TableRow key={index} className="border-b border-white/10">
+                <TableCell className="py-1 px-2">{price.type}</TableCell>
+                <TableCell className="py-1 px-2"></TableCell>
+                <TableCell className="py-1 px-2">{price.value.toFixed(2)}</TableCell>
+                <TableCell className="py-1 px-2">
+                  {product.eco && product.eco[price.type] ? product.eco[price.type].toFixed(2) : ''}
+                </TableCell>
+                <TableCell className="py-1 px-2 text-center">⊙</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+      
       <div className="w-10 flex-shrink-0">
         <div className="flex items-center justify-center w-6 h-6 text-xs opacity-70">
           ❤
@@ -55,22 +86,6 @@ const ProductRow: React.FC<{ product: Product }> = ({ product }) => {
             </div>
             <div className="text-xs opacity-70">{product.location}</div>
           </div>
-        </div>
-      </div>
-      
-      <div className="flex gap-3 ml-2">
-        {product.prices.map((price, index) => (
-          <div 
-            key={index} 
-            className="flex flex-col text-center w-24 bg-white/20 rounded-xl py-1 px-2"
-          >
-            <span className="text-xs opacity-70">{price.type}</span>
-            <span className="font-medium">{price.value.toFixed(2)}</span>
-          </div>
-        ))}
-        
-        <div className="flex items-center justify-center w-10 h-10 opacity-70">
-          ⊙
         </div>
       </div>
     </div>
