@@ -63,17 +63,6 @@ const Settings = () => {
         console.error('Error parsing saved table configurations:', e);
       }
     }
-    
-    // Load saved connection settings
-    const savedDbSettings = localStorage.getItem('railway_db_settings');
-    if (savedDbSettings) {
-      try {
-        const parsedSettings = JSON.parse(savedDbSettings);
-        setDbSettings(parsedSettings);
-      } catch (e) {
-        console.error('Error parsing saved DB settings:', e);
-      }
-    }
   }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -93,8 +82,14 @@ const Settings = () => {
       return;
     }
     
-    // Save settings to localStorage
-    localStorage.setItem('railway_db_settings', JSON.stringify(dbSettings));
+    // Save settings to localStorage with correct format
+    localStorage.setItem('railway_db_settings', JSON.stringify({
+      host: dbSettings.host,
+      port: dbSettings.port,
+      database: dbSettings.database,
+      user: dbSettings.user,
+      password: dbSettings.password,
+    }));
     
     // Update current settings for display
     setCurrentSettings({
@@ -115,18 +110,12 @@ const Settings = () => {
       // @ts-ignore
       window.RAILWAY_DB_PASSWORD = dbSettings.password;
       
-      // Log the updated settings
-      console.log("Railway DB settings updated:", {
-        host: dbSettings.host,
-        port: dbSettings.port,
-        database: dbSettings.database,
-        user: dbSettings.user,
-        passwordProvided: dbSettings.password ? "Yes" : "No"
-      });
+      // Force reload to ensure all components use the new settings
+      window.location.reload();
     }
     
     toast.success("Paramètres de connexion enregistrés", {
-      description: "Les paramètres ont été appliqués immédiatement."
+      description: "Les paramètres ont été appliqués et la page va se recharger."
     });
   };
 

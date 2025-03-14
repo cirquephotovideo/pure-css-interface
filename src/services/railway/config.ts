@@ -28,6 +28,24 @@ export function parseDBConnectionString(connectionString: string | null | undefi
   }
 }
 
+// Try to get stored settings first
+const getStoredSettings = () => {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      const storedSettings = localStorage.getItem('railway_db_settings');
+      if (storedSettings) {
+        return JSON.parse(storedSettings);
+      }
+    }
+  } catch (e) {
+    console.error("Error accessing or parsing stored DB settings:", e);
+  }
+  return null;
+};
+
+// Get stored settings or use defaults
+const storedSettings = getStoredSettings();
+
 // Try to get connection info from potential connection string
 const connectionString = import.meta.env.VITE_RAILWAY_DB_CONNECTION_STRING;
 const parsedConnection = parseDBConnectionString(connectionString);
@@ -39,41 +57,12 @@ let initialDbName = import.meta.env.VITE_RAILWAY_DB_NAME || (parsedConnection?.d
 let initialUser = import.meta.env.VITE_RAILWAY_DB_USER || (parsedConnection?.user || "postgres");
 let initialPassword = import.meta.env.VITE_RAILWAY_DB_PASSWORD || (parsedConnection?.password || "AJJHHgZgkdZwXawcThnbDpwtzxFUuQaU");
 
-// Get connection values from localStorage if available
-const getStoredSetting = (key: string, defaultValue: string): string => {
-  if (typeof window !== 'undefined') {
-    // @ts-ignore - Check if we have a window object with Railway DB settings
-    if (window[key]) {
-      // @ts-ignore
-      return window[key];
-    }
-    
-    // Try to get from localStorage
-    const storedSettings = localStorage.getItem('railway_db_settings');
-    if (storedSettings) {
-      try {
-        const settings = JSON.parse(storedSettings);
-        if (key === 'RAILWAY_DB_HOST' && settings.host) return settings.host;
-        if (key === 'RAILWAY_DB_PORT' && settings.port) return settings.port;
-        if (key === 'RAILWAY_DB_NAME' && settings.database) return settings.database;
-        if (key === 'RAILWAY_DB_USER' && settings.user) return settings.user;
-        if (key === 'RAILWAY_DB_PASSWORD' && settings.password) return settings.password;
-      } catch (e) {
-        console.error("Error parsing stored DB settings:", e);
-      }
-    }
-  }
-  
-  return defaultValue;
-};
-
-// Configuration for Railway DB connection
-// First try to get from localStorage/window, then use env vars or defaults
-export const RAILWAY_DB_HOST = getStoredSetting('RAILWAY_DB_HOST', initialHost);
-export const RAILWAY_DB_PORT = getStoredSetting('RAILWAY_DB_PORT', initialPort);
-export const RAILWAY_DB_NAME = getStoredSetting('RAILWAY_DB_NAME', initialDbName);
-export const RAILWAY_DB_USER = getStoredSetting('RAILWAY_DB_USER', initialUser);
-export const RAILWAY_DB_PASSWORD = getStoredSetting('RAILWAY_DB_PASSWORD', initialPassword);
+// Configuration for Railway DB connection - now prioritizing localStorage values
+export const RAILWAY_DB_HOST = storedSettings?.host || initialHost;
+export const RAILWAY_DB_PORT = storedSettings?.port || initialPort;
+export const RAILWAY_DB_NAME = storedSettings?.database || initialDbName;
+export const RAILWAY_DB_USER = storedSettings?.user || initialUser;
+export const RAILWAY_DB_PASSWORD = storedSettings?.password || initialPassword;
 
 export const RAILWAY_READ_ONLY_TOKEN = "dbe21f72-1f35-489b-8500-8823ebf152d5";
 
@@ -98,5 +87,6 @@ console.log("Railway DB Configuration loaded:", {
   port: RAILWAY_DB_PORT,
   database: RAILWAY_DB_NAME,
   user: RAILWAY_DB_USER,
-  passwordProvided: RAILWAY_DB_PASSWORD ? "Yes" : "No"
+  passwordProvided: RAILWAY_DB_PASSWORD ? "Yes" : "No",
+  source: storedSettings ? "localStorage" : "default/env"
 });
