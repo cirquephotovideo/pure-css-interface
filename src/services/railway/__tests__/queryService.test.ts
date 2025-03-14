@@ -10,6 +10,36 @@ import { sampleProducts } from "./fixtures/products";
 global.fetch = jest.fn();
 const mockFetch = global.fetch as jest.MockedFunction<typeof fetch>;
 
+// Mock the modules that executeRailwayQuery depends on
+jest.mock("../logger", () => ({
+  LogLevel: {
+    INFO: "info",
+    WARN: "warn",
+    ERROR: "error"
+  },
+  logMessage: jest.fn()
+}));
+
+jest.mock("../apiService", () => ({
+  sendQueryToRailwayAPI: jest.fn().mockImplementation(async (query, params) => {
+    // This will be overridden by mockFetch in each test
+    const response = await global.fetch(
+      "https://hspgrehyavlqiilrajor.supabase.co/functions/v1/railway-db",
+      {
+        method: "POST",
+        headers: expect.any(Object),
+        body: expect.any(String)
+      }
+    );
+    
+    if (!response.ok) {
+      return { data: null, count: 0, error: "Erreur serveur Railway" };
+    }
+    
+    return response.json();
+  })
+}));
+
 describe("Railway DB queryService", () => {
   // Setup and teardown
   let consoleSpy: ReturnType<typeof spyOnConsole>;
