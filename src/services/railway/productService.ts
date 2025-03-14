@@ -86,9 +86,11 @@ export async function searchProducts(term: string): Promise<QueryResult<Product>
       if (savedConfigs) {
         tableConfigs = JSON.parse(savedConfigs);
         logMessage(LogLevel.INFO, `Loaded ${tableConfigs.length} table configurations`);
+        addToLogBuffer(LogLevel.INFO, `Chargement de ${tableConfigs.length} configurations de tables`);
       }
     } catch (error) {
       logMessage(LogLevel.ERROR, "Error loading table configurations", { error });
+      addToLogBuffer(LogLevel.ERROR, "Erreur lors du chargement des configurations de tables");
     }
     
     // First, get all available tables for searching
@@ -129,6 +131,7 @@ export async function searchProducts(term: string): Promise<QueryResult<Product>
       enabledTables: enabledTableNames,
       availableTables: tables.map(t => t.table_name)
     });
+    addToLogBuffer(LogLevel.INFO, `Utilisation de ${selectedTables.length} tables pour la recherche`);
     
     // Now for each table, get its columns to build a dynamic search query
     const tableQueries = [];
@@ -200,7 +203,7 @@ export async function searchProducts(term: string): Promise<QueryResult<Product>
             `)
           : columns
               .filter(c => ['id', 'brand', 'code_article', 'oemnr', 'articlenr', 
-                            'description_odr1', 'description'].includes(c.column_name.toLowerCase()))
+                            'description_odr1', 'description', 'eannr', 'supplier_id'].includes(c.column_name.toLowerCase()))
               .map(c => `
                 ${c.column_name}::text ILIKE $1 
                 OR ${c.column_name}::text ILIKE $2
@@ -229,6 +232,7 @@ export async function searchProducts(term: string): Promise<QueryResult<Product>
                 '${table.table_name}' AS source_table 
               FROM "${table.table_name}" 
               WHERE ${searchableColumns.join(' OR ')}
+              LIMIT 20
             `);
           } else {
             // Fallback to automatic column detection if no mapping is defined
@@ -260,6 +264,7 @@ export async function searchProducts(term: string): Promise<QueryResult<Product>
                 '${table.table_name}' AS source_table 
               FROM "${table.table_name}" 
               WHERE ${searchableColumns.join(' OR ')}
+              LIMIT 20
             `);
           }
         }
@@ -283,6 +288,7 @@ export async function searchProducts(term: string): Promise<QueryResult<Product>
     const fullQuery = tableQueries.join(' UNION ALL ') + ' LIMIT 100';
     
     logMessage(LogLevel.INFO, `Recherche de produits avec "${term}" dans ${tableQueries.length} tables`);
+    addToLogBuffer(LogLevel.INFO, `Recherche avec "${term}" dans ${tableQueries.length} tables`);
     
     // Create multiple variations of the search term for better matching
     const wildcardTerm = `%${term.trim()}%`;                 // Standard wildcard search: %GITZO MAGNESIUM%

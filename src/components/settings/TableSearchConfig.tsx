@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -240,6 +241,8 @@ const TableSearchConfig: React.FC<TableSearchConfigProps> = ({
         (id === 'brand' && (col.toLowerCase().includes('marque') || col.toLowerCase() === 'brand')) ||
         (id === 'supplier_code' && (col.toLowerCase().includes('oemnr') || col.toLowerCase().includes('supplierid'))) ||
         (id === 'name' && (col.toLowerCase().includes('designation') || col.toLowerCase().includes('nom'))) ||
+        (id === 'price' && (col.toLowerCase().includes('price') || col.toLowerCase().includes('prix'))) ||
+        (id === 'stock' && (col.toLowerCase().includes('stock') || col.toLowerCase().includes('quantity'))) ||
         (id === 'location' && col.toLowerCase().includes('location'))
       );
       
