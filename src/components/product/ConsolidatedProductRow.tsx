@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Product } from '@/services/railway';
 import { Info, Database, ExternalLink } from 'lucide-react';
@@ -91,6 +92,7 @@ const ConsolidatedProductRow: React.FC<ConsolidatedProductRowProps> = ({
       const entry = sourceMap.get(source)!;
       entry.products.push(product);
       
+      // Extract price information in different formats
       if (product.prices && product.prices.length > 0) {
         product.prices.forEach(price => {
           const priceStr = `${price.type}: ${price.value.toFixed(2)} €`;
@@ -98,6 +100,12 @@ const ConsolidatedProductRow: React.FC<ConsolidatedProductRowProps> = ({
             entry.prices.push(priceStr);
           }
         });
+      } else if (product.price !== undefined) {
+        // Handle when price is directly on the product object
+        const priceStr = `price: ${product.price} €`;
+        if (!entry.prices.includes(priceStr)) {
+          entry.prices.push(priceStr);
+        }
       }
     });
     
@@ -186,11 +194,11 @@ const ConsolidatedProductRow: React.FC<ConsolidatedProductRowProps> = ({
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
-                {product.prices && product.prices.length > 0 && (
-                  <div className="bg-blue-50 p-3 rounded-lg">
-                    <h4 className="text-xs font-medium mb-2 text-blue-800">Prix:</h4>
-                    <div className="space-y-2">
-                      {product.prices.map((price, idx) => (
+                <div className="bg-blue-50 p-3 rounded-lg">
+                  <h4 className="text-xs font-medium mb-2 text-blue-800">Prix:</h4>
+                  <div className="space-y-2">
+                    {product.prices && product.prices.length > 0 ? (
+                      product.prices.map((price, idx) => (
                         <div key={idx} className="bg-white p-2 rounded flex items-center justify-between">
                           <span className="text-xs text-gray-600">{price.type}:</span>
                           <div className="flex items-center gap-1">
@@ -203,10 +211,21 @@ const ConsolidatedProductRow: React.FC<ConsolidatedProductRowProps> = ({
                             </button>
                           </div>
                         </div>
-                      ))}
-                    </div>
+                      ))
+                    ) : product.price !== undefined ? (
+                      <div className="bg-white p-2 rounded flex items-center justify-between">
+                        <span className="text-xs text-gray-600">price:</span>
+                        <div className="flex items-center gap-1">
+                          <span className="font-medium">{product.price} €</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="bg-white p-2 rounded text-center">
+                        <span className="text-gray-400">Non défini</span>
+                      </div>
+                    )}
                   </div>
-                )}
+                </div>
                 
                 <div className="bg-green-50 p-3 rounded-lg">
                   <h4 className="text-xs font-medium mb-2 text-green-800">Stock:</h4>
@@ -261,19 +280,28 @@ const ConsolidatedProductRow: React.FC<ConsolidatedProductRowProps> = ({
             
             <div className="overflow-y-auto max-h-[60vh] pr-2">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-                {selectedProductForDialog.prices && selectedProductForDialog.prices.length > 0 && (
-                  <div className="bg-blue-50 p-4 rounded-lg">
-                    <h3 className="text-sm font-medium mb-3">Prix et tarification</h3>
-                    <div className="space-y-2">
-                      {selectedProductForDialog.prices.map((price, idx) => (
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <h3 className="text-sm font-medium mb-3">Prix et tarification</h3>
+                  <div className="space-y-2">
+                    {selectedProductForDialog.prices && selectedProductForDialog.prices.length > 0 ? (
+                      selectedProductForDialog.prices.map((price, idx) => (
                         <div key={idx} className="bg-white p-3 rounded flex items-center justify-between">
                           <span className="text-sm text-gray-700">{price.type}:</span>
                           <span className="text-lg font-semibold text-blue-700">{price.value.toFixed(2)} €</span>
                         </div>
-                      ))}
-                    </div>
+                      ))
+                    ) : selectedProductForDialog.price !== undefined ? (
+                      <div className="bg-white p-3 rounded flex items-center justify-between">
+                        <span className="text-sm text-gray-700">price:</span>
+                        <span className="text-lg font-semibold text-blue-700">{selectedProductForDialog.price} €</span>
+                      </div>
+                    ) : (
+                      <div className="bg-white p-3 rounded text-center">
+                        <span className="text-gray-500">Non défini</span>
+                      </div>
+                    )}
                   </div>
-                )}
+                </div>
                 
                 <div className="bg-green-50 p-4 rounded-lg">
                   <h3 className="text-sm font-medium mb-3">Stock et localisation</h3>
