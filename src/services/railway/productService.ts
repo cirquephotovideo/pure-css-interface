@@ -7,9 +7,10 @@ import { Product, QueryResult } from "./types";
  */
 export async function fetchProducts(): Promise<QueryResult<Product>> {
   try {
+    // Modified query to select only columns that we know exist in the database
     const query = `
       SELECT 
-        id, 
+        product_id, 
         reference, 
         name, 
         description, 
@@ -18,11 +19,7 @@ export async function fetchProducts(): Promise<QueryResult<Product>> {
         ean,
         supplier_code,
         stock,
-        ARRAY(
-          SELECT json_build_object('type', 'default', 'value', price) 
-          FROM (SELECT price) p 
-          WHERE price IS NOT NULL
-        ) as prices,
+        price,
         'products' as source_table
       FROM products
       LIMIT 100
@@ -53,7 +50,7 @@ export async function searchProducts(searchTerm: string): Promise<QueryResult<Pr
       // Search by EAN or barcode (exact match)
       query = `
         SELECT 
-          id, 
+          product_id, 
           reference, 
           name, 
           description, 
@@ -62,11 +59,7 @@ export async function searchProducts(searchTerm: string): Promise<QueryResult<Pr
           ean,
           supplier_code,
           stock,
-          ARRAY(
-            SELECT json_build_object('type', 'default', 'value', price) 
-            FROM (SELECT price) p 
-            WHERE price IS NOT NULL
-          ) as prices,
+          price,
           'products' as source_table
         FROM products
         WHERE ean = $1 OR barcode = $1
@@ -77,7 +70,7 @@ export async function searchProducts(searchTerm: string): Promise<QueryResult<Pr
       // Full text search on multiple fields
       query = `
         SELECT 
-          id, 
+          product_id, 
           reference, 
           name, 
           description, 
@@ -86,11 +79,7 @@ export async function searchProducts(searchTerm: string): Promise<QueryResult<Pr
           ean,
           supplier_code,
           stock,
-          ARRAY(
-            SELECT json_build_object('type', 'default', 'value', price) 
-            FROM (SELECT price) p 
-            WHERE price IS NOT NULL
-          ) as prices,
+          price,
           'products' as source_table
         FROM products
         WHERE 
