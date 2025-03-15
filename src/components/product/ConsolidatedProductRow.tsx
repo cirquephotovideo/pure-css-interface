@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Product } from '@/services/railway';
 import { Info, Database, ExternalLink } from 'lucide-react';
@@ -39,12 +38,9 @@ const ConsolidatedProductRow: React.FC<ConsolidatedProductRowProps> = ({
   const [selectedSource, setSelectedSource] = useState<string | null>(null);
   const [selectedProductForDialog, setSelectedProductForDialog] = useState<Product | null>(null);
   
-  // Get a representative product for the main display
-  // Choose the one with the most complete information
   const getPrimaryProduct = (): Product => {
     if (products.length === 0) return {} as Product;
     
-    // Sort by completeness and pick the most complete one
     return [...products].sort((a, b) => {
       const aFields = Object.values(a).filter(Boolean).length;
       const bFields = Object.values(b).filter(Boolean).length;
@@ -67,13 +63,11 @@ const ConsolidatedProductRow: React.FC<ConsolidatedProductRowProps> = ({
     setSelectedProductForDialog(product);
   };
   
-  // Get products for the selected source or all if none selected
   const getDisplayProducts = (): Product[] => {
     if (!selectedSource) return products;
     return products.filter(p => p.source_table === selectedSource);
   };
 
-  // Helper function to group products by source with their price and stock information
   const getProductsBySource = () => {
     const sourceMap = new Map<string, { 
       source: string;
@@ -97,7 +91,6 @@ const ConsolidatedProductRow: React.FC<ConsolidatedProductRowProps> = ({
       const entry = sourceMap.get(source)!;
       entry.products.push(product);
       
-      // Add prices if available
       if (product.prices && product.prices.length > 0) {
         product.prices.forEach(price => {
           const priceStr = `${price.type}: ${price.value.toFixed(2)} €`;
@@ -133,7 +126,6 @@ const ConsolidatedProductRow: React.FC<ConsolidatedProductRowProps> = ({
         </div>
       </div>
       
-      {/* Summary of Prices and Stocks by Source */}
       <div className="mt-4 mb-2 bg-blue-50 p-3 rounded-lg">
         <h3 className="text-sm font-medium mb-2 text-blue-700">Prix et stock par source</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -145,7 +137,7 @@ const ConsolidatedProductRow: React.FC<ConsolidatedProductRowProps> = ({
               <div className="space-y-2">
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <div className="text-xs text-gray-500">Prix</div>
+                    <div className="text-xs text-gray-500">price</div>
                     <div className="font-medium">
                       {sourceData.prices.length > 0 ? (
                         <div className="space-y-1 mt-1">
@@ -175,7 +167,6 @@ const ConsolidatedProductRow: React.FC<ConsolidatedProductRowProps> = ({
         </div>
       </div>
 
-      {/* Source Details Section - Now shown directly without collapsing */}
       <div className="bg-white rounded-xl overflow-hidden border border-gray-200 shadow-sm">
         <div className="bg-purple-50 p-3 border-b border-purple-100">
           <h3 className="text-sm font-medium flex items-center gap-2 text-purple-800">
@@ -195,7 +186,6 @@ const ConsolidatedProductRow: React.FC<ConsolidatedProductRowProps> = ({
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
-                {/* Price Information Card */}
                 {product.prices && product.prices.length > 0 && (
                   <div className="bg-blue-50 p-3 rounded-lg">
                     <h4 className="text-xs font-medium mb-2 text-blue-800">Prix:</h4>
@@ -218,7 +208,6 @@ const ConsolidatedProductRow: React.FC<ConsolidatedProductRowProps> = ({
                   </div>
                 )}
                 
-                {/* Stock Information Card */}
                 <div className="bg-green-50 p-3 rounded-lg">
                   <h4 className="text-xs font-medium mb-2 text-green-800">Stock:</h4>
                   <div className="bg-white p-2 rounded flex items-center justify-between">
@@ -245,7 +234,6 @@ const ConsolidatedProductRow: React.FC<ConsolidatedProductRowProps> = ({
         </div>
       </div>
       
-      {/* Price Info Dialog */}
       {primaryProduct.prices && primaryProduct.prices.map((price, index) => (
         <PriceInfoDialog 
           key={index}
@@ -256,7 +244,6 @@ const ConsolidatedProductRow: React.FC<ConsolidatedProductRowProps> = ({
         />
       ))}
       
-      {/* Product Details Dialog */}
       {selectedProductForDialog && (
         <Dialog open={!!selectedProductForDialog} onOpenChange={(open) => !open && setSelectedProductForDialog(null)}>
           <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden">
@@ -274,7 +261,6 @@ const ConsolidatedProductRow: React.FC<ConsolidatedProductRowProps> = ({
             
             <div className="overflow-y-auto max-h-[60vh] pr-2">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-                {/* Prices Section */}
                 {selectedProductForDialog.prices && selectedProductForDialog.prices.length > 0 && (
                   <div className="bg-blue-50 p-4 rounded-lg">
                     <h3 className="text-sm font-medium mb-3">Prix et tarification</h3>
@@ -289,7 +275,6 @@ const ConsolidatedProductRow: React.FC<ConsolidatedProductRowProps> = ({
                   </div>
                 )}
                 
-                {/* Stock Section */}
                 <div className="bg-green-50 p-4 rounded-lg">
                   <h3 className="text-sm font-medium mb-3">Stock et localisation</h3>
                   <div className="space-y-2">
@@ -314,7 +299,6 @@ const ConsolidatedProductRow: React.FC<ConsolidatedProductRowProps> = ({
                 </div>
               </div>
               
-              {/* All Product Details Table */}
               <div className="bg-gray-50 p-4 rounded-lg">
                 <h3 className="text-sm font-medium mb-3">Toutes les informations</h3>
                 <Table>
