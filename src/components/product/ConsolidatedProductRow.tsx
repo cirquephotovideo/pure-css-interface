@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Product } from '@/services/railway';
 import { ChevronDown, ChevronUp, Table, Info, Database, ExternalLink } from 'lucide-react';
@@ -88,6 +87,48 @@ const ConsolidatedProductRow: React.FC<ConsolidatedProductRowProps> = ({
     return products.filter(p => p.source_table === selectedSource);
   };
 
+  // Helper function to get unique prices with their sources
+  const getUniquePrices = (): { value: number; source: string }[] => {
+    const priceMap = new Map<string, { value: number; source: string }>();
+    
+    products.forEach(product => {
+      if (product.prices && product.prices.length > 0) {
+        // Use the first price for simplicity
+        const price = product.prices[0];
+        const key = `${price.value}-${product.source_table}`;
+        
+        if (!priceMap.has(key)) {
+          priceMap.set(key, {
+            value: price.value,
+            source: product.source_table || 'unknown'
+          });
+        }
+      }
+    });
+    
+    return Array.from(priceMap.values());
+  };
+
+  // Helper function to get unique stocks with their sources
+  const getUniqueStocks = (): { value: number; source: string }[] => {
+    const stockMap = new Map<string, { value: number; source: string }>();
+    
+    products.forEach(product => {
+      if (product.stock !== undefined) {
+        const key = `${product.stock}-${product.source_table}`;
+        
+        if (!stockMap.has(key)) {
+          stockMap.set(key, {
+            value: product.stock,
+            source: product.source_table || 'unknown'
+          });
+        }
+      }
+    });
+    
+    return Array.from(stockMap.values());
+  };
+
   return (
     <div className="ios-glass p-4 mb-4 animate-fade-in">
       <div className="flex items-center gap-4">
@@ -149,12 +190,79 @@ const ConsolidatedProductRow: React.FC<ConsolidatedProductRowProps> = ({
             <UITable>
               <TableHeader className="bg-gray-50">
                 <TableRow>
-                  <TableHead className="w-1/3 font-medium text-blue-800">Champ standard</TableHead>
-                  <TableHead className="w-1/3 font-medium text-blue-800">Valeur</TableHead>
-                  <TableHead className="w-1/3 font-medium text-blue-800">Source</TableHead>
+                  <TableHead className="w-1/4 font-medium text-blue-800">Champ standard</TableHead>
+                  <TableHead className="w-2/4 font-medium text-blue-800">Valeur</TableHead>
+                  <TableHead className="w-1/4 font-medium text-blue-800">Source</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
+                {/* Price field */}
+                <TableRow>
+                  <TableCell className="font-medium">Prix</TableCell>
+                  <TableCell>
+                    {getUniquePrices().length > 0 ? (
+                      getUniquePrices().length > 1 ? (
+                        <span className="text-orange-600 font-medium">
+                          {getUniquePrices().length} valeurs différentes
+                        </span>
+                      ) : (
+                        <span>{getUniquePrices()[0].value.toFixed(2)} €</span>
+                      )
+                    ) : (
+                      <span className="text-gray-400">Non défini</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {getUniquePrices().length > 0 ? (
+                      getUniquePrices().length > 1 ? (
+                        <span className="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-full">
+                          Plusieurs sources
+                        </span>
+                      ) : (
+                        <span className="text-xs bg-blue-50 text-blue-800 px-2 py-1 rounded-full">
+                          {getUniquePrices()[0].source}
+                        </span>
+                      )
+                    ) : (
+                      <span className="text-gray-400">-</span>
+                    )}
+                  </TableCell>
+                </TableRow>
+                
+                {/* Stock field */}
+                <TableRow>
+                  <TableCell className="font-medium">Stock</TableCell>
+                  <TableCell>
+                    {getUniqueStocks().length > 0 ? (
+                      getUniqueStocks().length > 1 ? (
+                        <span className="text-orange-600 font-medium">
+                          {getUniqueStocks().length} valeurs différentes
+                        </span>
+                      ) : (
+                        <span>{getUniqueStocks()[0].value}</span>
+                      )
+                    ) : (
+                      <span className="text-gray-400">Non défini</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {getUniqueStocks().length > 0 ? (
+                      getUniqueStocks().length > 1 ? (
+                        <span className="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-full">
+                          Plusieurs sources
+                        </span>
+                      ) : (
+                        <span className="text-xs bg-blue-50 text-blue-800 px-2 py-1 rounded-full">
+                          {getUniqueStocks()[0].source}
+                        </span>
+                      )
+                    ) : (
+                      <span className="text-gray-400">-</span>
+                    )}
+                  </TableCell>
+                </TableRow>
+                
+                {/* Other standard fields */}
                 {[
                   { key: 'reference', label: 'Référence' },
                   { key: 'barcode', label: 'Code-barres' },
@@ -163,8 +271,7 @@ const ConsolidatedProductRow: React.FC<ConsolidatedProductRowProps> = ({
                   { key: 'supplier_code', label: 'Code fournisseur' },
                   { key: 'name', label: 'Nom' },
                   { key: 'location', label: 'Emplacement' },
-                  { key: 'category', label: 'Catégorie' },
-                  { key: 'stock', label: 'Stock' }
+                  { key: 'category', label: 'Catégorie' }
                 ].map((field, index) => {
                   const uniqueValues = getUniqueValues(field.key as keyof Product);
                   const hasDifferences = uniqueValues.length > 1;
