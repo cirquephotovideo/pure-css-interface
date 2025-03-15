@@ -4,6 +4,7 @@ import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { standardColumns } from '../utils/standardColumns';
 import { TableConfig } from "@/types/tableConfig";
+import { toast } from "sonner";
 
 interface MappingFieldSelectorProps {
   selectedTable: string;
@@ -23,24 +24,41 @@ const MappingFieldSelector: React.FC<MappingFieldSelectorProps> = ({
   const columnMapping = tableConfig.columnMapping || {};
   
   const updateColumnMapping = (standardField: string, tableField: string) => {
+    // Create a copy of existing configs to modify
     const updatedConfigs = tableConfigs.map(config => {
       if (config.name === selectedTable) {
-        const columnMapping = config.columnMapping || {};
+        // Create a copy of the current mapping or initialize if it doesn't exist
+        const newMapping = { ...config.columnMapping } || {};
         
-        const newMapping = tableField 
-          ? { ...columnMapping, [standardField]: tableField }
-          : { ...columnMapping };
-          
-        if (!tableField && standardField in newMapping) {
-          delete newMapping[standardField];
+        if (tableField) {
+          // Add or update mapping
+          newMapping[standardField] = tableField;
+        } else {
+          // Remove mapping if tableField is empty
+          if (newMapping[standardField]) {
+            delete newMapping[standardField];
+          }
         }
         
-        return { ...config, columnMapping: newMapping };
+        // Return updated config
+        return { 
+          ...config, 
+          columnMapping: newMapping 
+        };
       }
       return config;
     });
     
+    // Apply the changes
     onConfigChange(updatedConfigs);
+    
+    // Show feedback to user
+    if (tableField) {
+      const standardLabel = standardColumns.find(col => col.id === standardField)?.label || standardField;
+      toast.success(`Champ "${standardLabel}" mappé à "${tableField}"`, {
+        duration: 2000,
+      });
+    }
   };
 
   return (
@@ -51,7 +69,7 @@ const MappingFieldSelector: React.FC<MappingFieldSelectorProps> = ({
           
           return (
             <div key={id} className="grid grid-cols-12 gap-4 items-center">
-              <Label htmlFor={`map-${id}`} className="col-span-3 flex items-center">
+              <Label htmlFor={`map-${id}`} className="col-span-3 flex items-center gap-2">
                 {icon}
                 <span>{label}</span>
               </Label>

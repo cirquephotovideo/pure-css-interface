@@ -4,6 +4,7 @@ import { TableConfig } from "@/types/tableConfig";
 import ColumnMappingActions from './mapping/ColumnMappingActions';
 import CurrentMappingDisplay from './mapping/CurrentMappingDisplay';
 import MappingFieldSelector from './mapping/MappingFieldSelector';
+import { Card } from "@/components/ui/card";
 
 interface ColumnMappingTabProps {
   selectedTable: string;
@@ -39,10 +40,10 @@ const ColumnMappingTab: React.FC<ColumnMappingTabProps> = ({
         <p className="mt-1">Exemple: si la colonne pour la marque s'appelle "brand_name", associez-la à "brand".</p>
       </div>
       
-      <div className="bg-muted/30 p-4 rounded-md mb-4">
+      <Card className="bg-muted/30 p-4 rounded-md mb-4">
         <h4 className="text-sm font-medium mb-2">Mappings actuels:</h4>
         <CurrentMappingDisplay columnMapping={columnMapping} />
-      </div>
+      </Card>
       
       <MappingFieldSelector
         selectedTable={selectedTable}
