@@ -1,20 +1,15 @@
 
-import { executeRailwayQuery } from './queryService';
-import { Product } from './types';
-import { toast } from "sonner";
+import { executeRailwayQuery } from "./queryService";
+import { Product, QueryResult } from "./types";
 
-// Interface for search results
-export interface SearchResult {
-  data: Product[] | null;
-  error: string | null;
-}
-
-// Fetch all products from the database
-export const fetchProducts = async (): Promise<SearchResult> => {
+/**
+ * Fetch all products from the database
+ */
+export async function fetchProducts(): Promise<QueryResult<Product>> {
   try {
     const query = `
       SELECT 
-        id, 
+        product_id as id, 
         reference, 
         name, 
         description, 
@@ -33,121 +28,90 @@ export const fetchProducts = async (): Promise<SearchResult> => {
       LIMIT 100
     `;
     
-    const result = await executeRailwayQuery<Product>(query);
-    
-    if (result.error) {
-      return { data: null, error: result.error };
-    }
-    
-    return { data: result.data || [], error: null };
+    return await executeRailwayQuery<Product>(query);
   } catch (error) {
-    console.error('Error fetching products:', error);
-    return { 
-      data: null, 
-      error: error instanceof Error ? error.message : 'Unknown error occurred' 
+    console.error("Error fetching products:", error);
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    return {
+      data: null,
+      count: 0,
+      error: `Error fetching products: ${errorMessage}`
     };
   }
-};
+}
 
-// Search for products in the database
-export const searchProducts = async (searchTerm: string): Promise<SearchResult> => {
+/**
+ * Search for products by term
+ */
+export async function searchProducts(searchTerm: string): Promise<QueryResult<Product>> {
   try {
-    // Get table configurations from localStorage
-    const savedTableConfigs = localStorage.getItem('railway_search_tables');
-    let tableConfigs: any[] = [];
+    let query = '';
+    let params = [];
     
-    if (savedTableConfigs) {
-      try {
-        tableConfigs = JSON.parse(savedTableConfigs);
-      } catch (e) {
-        console.error('Error parsing saved table configurations:', e);
-      }
-    }
-    
-    // Filter enabled tables
-    const enabledTables = tableConfigs.filter(config => config.enabled);
-    
-    if (enabledTables.length === 0) {
-      // If no tables are enabled, search only in the products table
-      return fetchProducts();
-    }
-    
-    // Initialize empty results array
-    let allResults: Product[] = [];
-    
-    // Execute a query for each enabled table
-    for (const tableConfig of enabledTables) {
-      const tableName = tableConfig.name;
-      const searchFields = tableConfig.searchFields.length > 0 
-        ? tableConfig.searchFields 
-        : ['id', 'reference', 'name', 'description', 'brand', 'barcode', 'ean', 'supplier_code'];
-      
-      const columnMapping = tableConfig.columnMapping || {};
-      
-      // Build the WHERE clause for searching in the specified fields
-      const searchConditions = searchFields.map(field => 
-        `CAST(${field} AS TEXT) ILIKE $1`
-      ).join(' OR ');
-      
-      let query = `
+    // Determine if the search is for a numeric identifier (EAN, barcode)
+    if (/^\d+$/.test(searchTerm)) {
+      // Search by EAN or barcode (exact match)
+      query = `
         SELECT 
-          id,
-          ${columnMapping.reference ? columnMapping.reference : 'reference'} as reference,
-          ${columnMapping.name ? columnMapping.name : 'name'} as name,
-          ${columnMapping.description ? columnMapping.description : 'description'} as description,
-          ${columnMapping.brand ? columnMapping.brand : 'brand'} as brand,
-          ${columnMapping.barcode ? columnMapping.barcode : 'barcode'} as barcode,
-          ${columnMapping.ean ? columnMapping.ean : 'ean'} as ean,
-          ${columnMapping.supplier_code ? columnMapping.supplier_code : 'supplier_code'} as supplier_code,
-          ${columnMapping.stock ? columnMapping.stock : 'stock'} as stock,
-          '${tableName}' as source_table
-      `;
-      
-      // Add price mapping and conversion to prices array
-      if (columnMapping.price) {
-        query += `
-          ,ARRAY(
-            SELECT json_build_object('type', 'default', 'value', ${columnMapping.price}) 
-            FROM (SELECT ${columnMapping.price}) p 
-            WHERE ${columnMapping.price} IS NOT NULL
-          ) as prices
-        `;
-      } else {
-        query += `
-          ,ARRAY(
+          product_id as id, 
+          reference, 
+          name, 
+          description, 
+          brand, 
+          barcode, 
+          ean,
+          supplier_code,
+          stock,
+          ARRAY(
             SELECT json_build_object('type', 'default', 'value', price) 
             FROM (SELECT price) p 
             WHERE price IS NOT NULL
-          ) as prices
-        `;
-      }
-      
-      query += `
-        FROM ${tableName}
-        WHERE ${searchConditions}
+          ) as prices,
+          'products' as source_table
+        FROM products
+        WHERE ean = $1 OR barcode = $1
         LIMIT 100
       `;
-      
-      const result = await executeRailwayQuery<Product>(query, [`%${searchTerm}%`]);
-      
-      if (result.data && result.data.length > 0) {
-        allResults = [...allResults, ...result.data];
-      }
+      params = [searchTerm];
+    } else {
+      // Full text search on multiple fields
+      query = `
+        SELECT 
+          product_id as id, 
+          reference, 
+          name, 
+          description, 
+          brand, 
+          barcode, 
+          ean,
+          supplier_code,
+          stock,
+          ARRAY(
+            SELECT json_build_object('type', 'default', 'value', price) 
+            FROM (SELECT price) p 
+            WHERE price IS NOT NULL
+          ) as prices,
+          'products' as source_table
+        FROM products
+        WHERE 
+          name ILIKE $1 OR 
+          reference ILIKE $1 OR 
+          description ILIKE $1 OR
+          brand ILIKE $1 OR
+          supplier_code ILIKE $1
+        LIMIT 100
+      `;
+      params = [`%${searchTerm}%`];
     }
     
-    if (allResults.length === 0) {
-      return { data: [], error: null };
-    }
-    
-    return { data: allResults, error: null };
+    return await executeRailwayQuery<Product>(query, params);
   } catch (error) {
-    console.error('Error searching products:', error);
-    toast.error("Erreur de recherche", { 
-      description: error instanceof Error ? error.message : 'Erreur inconnue' 
-    });
-    return { 
-      data: null, 
-      error: error instanceof Error ? error.message : 'Unknown error occurred' 
+    console.error("Error searching products:", error);
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    return {
+      data: null,
+      count: 0,
+      error: `Error searching products: ${errorMessage}`
     };
   }
-};
+}
