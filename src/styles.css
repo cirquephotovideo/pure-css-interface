@@ -1,3 +1,4 @@
+
 /* Reset and Base Styles */
 * {
   margin: 0;
@@ -11,11 +12,6 @@ body {
   color: #333;
   min-height: 100vh;
   line-height: 1.5;
-}
-
-.dark body {
-  background: linear-gradient(135deg, #1A1F2C 0%, #2D2A3C 100%);
-  color: #eaeaea;
 }
 
 button {
@@ -475,79 +471,6 @@ input:checked + .slider:before {
 .product-details-table th {
   width: 30%;
   font-weight: 500;
-}
-
-/* Dark Mode Overrides */
-.dark .header,
-.dark .search-container,
-.dark .products-container,
-.dark .footer {
-  background: rgba(30, 30, 35, 0.2);
-  backdrop-filter: blur(15px);
-  -webkit-backdrop-filter: blur(15px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.dark .sidebar {
-  background: rgba(30, 30, 35, 0.3);
-  border-right: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.dark .sidebar-item {
-  color: rgba(255, 255, 255, 0.7);
-}
-
-.dark .sidebar-item:hover {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.dark .sidebar-item.active {
-  background: rgba(255, 255, 255, 0.15);
-  color: #fff;
-}
-
-.dark .search-input-container {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.dark .search-icon,
-.dark .mic-icon {
-  color: rgba(255, 255, 255, 0.5);
-}
-
-.dark .search-input {
-  color: #fff;
-}
-
-.dark .search-input::placeholder {
-  color: rgba(255, 255, 255, 0.5);
-}
-
-.dark .option-button,
-.dark .search-button {
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
-}
-
-.dark .option-button:hover,
-.dark .search-button:hover {
-  background: rgba(255, 255, 255, 0.2);
-}
-
-.dark .product-item {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.dark .product-info-table table td:first-child {
-  color: rgba(255, 255, 255, 0.7);
-}
-
-.dark .nav-tabs {
-  background: rgba(30, 30, 35, 0.2);
-}
-
-.dark .tab-item.active {
-  background: rgba(255, 255, 255, 0.15);
 }
 
 /* Responsive */

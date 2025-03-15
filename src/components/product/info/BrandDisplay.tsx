@@ -1,62 +1,32 @@
 
 import React from 'react';
 import { Product } from '@/services/railway';
-import { Badge } from '@/components/ui/badge';
-import { Database, Filter } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Package } from 'lucide-react';
 
 interface BrandDisplayProps {
   product: Product;
-  onClick?: () => void;
 }
 
-const BrandDisplay: React.FC<BrandDisplayProps> = ({
-  product,
-  onClick
-}) => {
-  const hasBrand = !!product.brand && product.brand !== 'NULL';
-  const hasSourceTable = !!product.source_table && product.source_table !== 'products';
-  
+const BrandDisplay: React.FC<BrandDisplayProps> = ({ product }) => {
   return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <div 
-            onClick={onClick} 
-            className={`p-2 rounded-md flex flex-col items-center ${onClick ? 'cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800' : ''} dark:text-white`}
-          >
-            {hasSourceTable && (
-              <Badge variant="outline" className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 text-xs mb-1 flex items-center gap-1">
-                <Database className="h-3 w-3" />
-                <span className="truncate max-w-[80px]">{product.source_table}</span>
-              </Badge>
-            )}
-            
-            {hasBrand ? (
-              <div className="text-center w-full font-medium">
-                {product.brand}
-              </div>
-            ) : (
-              <div className="text-center text-sm opacity-70">
-                Sans marque
-              </div>
-            )}
-            
-            {onClick && (
-              <div className="mt-2 text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1">
-                <Filter className="h-3 w-3" />
-                <span>Filtrer par table</span>
-              </div>
-            )}
+    <div className="flex items-center gap-2">
+      <div className="flex flex-col items-end">
+        <div className="flex items-center gap-1">
+          <span className="text-sm font-semibold">{product.brand || "Sans marque"}</span>
+        </div>
+        {product.location && (
+          <div className="text-xs flex items-center gap-1 opacity-70">
+            <Package className="h-3 w-3" />
+            {product.location}
           </div>
-        </TooltipTrigger>
-        {onClick && (
-          <TooltipContent>
-            <p>Cliquer pour voir tous les produits de {product.source_table}</p>
-          </TooltipContent>
         )}
-      </Tooltip>
-    </TooltipProvider>
+        {product.category && (
+          <div className="text-xs opacity-70">
+            {product.category}
+          </div>
+        )}
+      </div>
+    </div>
   );
 };
 

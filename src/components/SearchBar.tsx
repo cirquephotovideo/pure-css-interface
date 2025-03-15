@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -64,13 +63,13 @@ const SearchBar: React.FC<SearchBarProps> = ({
       
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div className={cn(
-          "ios-surface flex items-center px-3 py-2 relative dark:bg-gray-800/60",
-          hasError && "border border-red-300 bg-red-50/50 dark:bg-red-900/20 dark:border-red-800"
+          "ios-surface flex items-center px-3 py-2 relative",
+          hasError && "border border-red-300 bg-red-50/50"
         )}>
           {isEanSearch ? (
-            <BarcodeIcon className="text-blue-500 dark:text-blue-400 h-4 w-4 mr-2" />
+            <BarcodeIcon className="text-blue-500 h-4 w-4 mr-2" />
           ) : (
-            <FileText className="text-gray-500 dark:text-gray-400 h-4 w-4 mr-2" />
+            <FileText className="text-gray-500 h-4 w-4 mr-2" />
           )}
           
           <Input
@@ -85,7 +84,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
             <button 
               type="button" 
               onClick={() => setQuery('')}
-              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              className="text-gray-400 hover:text-gray-600"
             >
               <X className="h-4 w-4" />
             </button>
@@ -93,7 +92,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
         </div>
         
         {isEanSearch && query.length > 0 && (
-          <div className="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1">
+          <div className="text-xs text-blue-600 flex items-center gap-1">
             <BarcodeIcon className="h-3 w-3" />
             Recherche exacte par code EAN/barcode
           </div>
@@ -129,7 +128,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
         )}
         
         {hasError && (
-          <p className="text-xs text-red-500 dark:text-red-400">
+          <p className="text-xs text-red-500">
             Problème de connexion à la base de données. Veuillez réessayer.
           </p>
         )}
@@ -137,7 +136,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
         <div className="flex justify-between">
           <button
             type="button"
-            className="ios-button text-sm dark:bg-gray-800 dark:hover:bg-gray-700"
+            className="ios-button text-sm"
             onClick={() => {
               setQuery('');
               onSearch('');
@@ -150,7 +149,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
           <button
             type="submit"
             className={cn(
-              "ios-button text-sm dark:bg-blue-800 dark:hover:bg-blue-700",
+              "ios-button text-sm",
               isLoading && "opacity-50 cursor-not-allowed"
             )}
             disabled={query.trim() === '' || isLoading}
