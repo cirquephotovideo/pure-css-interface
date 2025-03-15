@@ -113,63 +113,72 @@ const ConsolidatedProductRow: React.FC<ConsolidatedProductRowProps> = ({
           </div>
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div className="ios-surface p-4 rounded-lg overflow-hidden">
+            <div className="ios-glass p-4 rounded-xl overflow-hidden">
               <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
                 <Table className="h-4 w-4" />
-                Champs mappés
+                Comparaison des champs
               </h3>
               
-              <div className="grid grid-cols-3 gap-2 text-xs">
-                <div className="font-medium bg-gray-100 p-2 rounded">Champ standard</div>
-                <div className="font-medium bg-gray-100 p-2 rounded">Valeur</div>
-                <div className="font-medium bg-gray-100 p-2 rounded">Source</div>
-                
-                {[
-                  { key: 'reference', label: 'Référence' },
-                  { key: 'barcode', label: 'Code-barres' },
-                  { key: 'description', label: 'Description' },
-                  { key: 'brand', label: 'Marque' },
-                  { key: 'supplier_code', label: 'Code fournisseur' },
-                  { key: 'name', label: 'Nom' },
-                  { key: 'location', label: 'Emplacement' },
-                  { key: 'category', label: 'Catégorie' }
-                ].map(field => {
-                  const uniqueValues = getUniqueValues(field.key as keyof Product);
-                  const hasDifferences = uniqueValues.length > 1;
-                  
-                  return (
-                    <React.Fragment key={field.key}>
-                      <div className="p-2 border-b">{field.label}</div>
-                      <div className={cn(
-                        "p-2 border-b",
-                        hasDifferences && "text-orange-600 font-medium"
-                      )}>
-                        {hasDifferences ? (
-                          <span>{uniqueValues.length} valeurs différentes</span>
-                        ) : uniqueValues.length === 1 ? (
-                          uniqueValues[0]
-                        ) : (
-                          <span className="text-gray-400">Non défini</span>
-                        )}
-                      </div>
-                      <div className="p-2 border-b">
-                        {hasDifferences ? (
-                          <span className="text-xs bg-orange-100 text-orange-800 px-1 py-0.5 rounded">
-                            Plusieurs sources
-                          </span>
-                        ) : uniqueValues.length === 1 ? (
-                          products.find(p => String(p[field.key as keyof Product]) === uniqueValues[0])?.source_table
-                        ) : (
-                          <span className="text-gray-400">-</span>
-                        )}
-                      </div>
-                    </React.Fragment>
-                  );
-                })}
+              <div className="rounded-xl overflow-hidden border border-gray-100">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="bg-blue-50">
+                      <th className="p-2 text-left font-medium text-blue-800 border-b border-white/30">Champ standard</th>
+                      <th className="p-2 text-left font-medium text-blue-800 border-b border-white/30">Valeur</th>
+                      <th className="p-2 text-left font-medium text-blue-800 border-b border-white/30">Source</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      { key: 'reference', label: 'Référence' },
+                      { key: 'barcode', label: 'Code-barres' },
+                      { key: 'description', label: 'Description' },
+                      { key: 'brand', label: 'Marque' },
+                      { key: 'supplier_code', label: 'Code fournisseur' },
+                      { key: 'name', label: 'Nom' },
+                      { key: 'location', label: 'Emplacement' },
+                      { key: 'category', label: 'Catégorie' }
+                    ].map((field, index) => {
+                      const uniqueValues = getUniqueValues(field.key as keyof Product);
+                      const hasDifferences = uniqueValues.length > 1;
+                      
+                      return (
+                        <tr key={field.key} className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+                          <td className="p-2 border-b border-gray-100">{field.label}</td>
+                          <td className={cn(
+                            "p-2 border-b border-gray-100",
+                            hasDifferences && "text-orange-600 font-medium"
+                          )}>
+                            {hasDifferences ? (
+                              <span>{uniqueValues.length} valeurs différentes</span>
+                            ) : uniqueValues.length === 1 ? (
+                              uniqueValues[0]
+                            ) : (
+                              <span className="text-gray-400">Non défini</span>
+                            )}
+                          </td>
+                          <td className="p-2 border-b border-gray-100">
+                            {hasDifferences ? (
+                              <span className="text-xs bg-orange-100 text-orange-800 px-1 py-0.5 rounded">
+                                Plusieurs sources
+                              </span>
+                            ) : uniqueValues.length === 1 ? (
+                              <span className="text-xs bg-blue-50 text-blue-800 px-1 py-0.5 rounded-md">
+                                {products.find(p => String(p[field.key as keyof Product]) === uniqueValues[0])?.source_table}
+                              </span>
+                            ) : (
+                              <span className="text-gray-400">-</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             </div>
             
-            <div className="ios-surface p-4 rounded-lg overflow-hidden">
+            <div className="ios-glass p-4 rounded-xl overflow-hidden">
               <h3 className="text-sm font-medium mb-3">Détails par source</h3>
               
               <Accordion type="single" collapsible className="w-full">
