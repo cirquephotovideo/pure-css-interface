@@ -7,10 +7,10 @@ import { Product, QueryResult } from "./types";
  */
 export async function fetchProducts(): Promise<QueryResult<Product>> {
   try {
-    // Modified query to select only columns that we know exist in the database
+    // Modified query to select columns with their original names and aliases
     const query = `
       SELECT 
-        product_id, 
+        id, 
         reference, 
         name, 
         description, 
@@ -50,7 +50,7 @@ export async function searchProducts(searchTerm: string): Promise<QueryResult<Pr
       // Search by EAN or barcode (exact match)
       query = `
         SELECT 
-          product_id, 
+          id, 
           reference, 
           name, 
           description, 
@@ -70,7 +70,7 @@ export async function searchProducts(searchTerm: string): Promise<QueryResult<Pr
       // Full text search on multiple fields
       query = `
         SELECT 
-          product_id, 
+          id, 
           reference, 
           name, 
           description, 

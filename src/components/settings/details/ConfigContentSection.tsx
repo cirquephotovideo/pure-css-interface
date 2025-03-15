@@ -5,6 +5,7 @@ import FieldsConfigTab from '../FieldsConfigTab';
 import ColumnMappingTab from '../ColumnMappingTab';
 import ConfigLoadingState from './ConfigLoadingState';
 import ConfigEmptyState from './ConfigEmptyState';
+import { AlertCircle } from 'lucide-react';
 
 interface ConfigContentSectionProps {
   fetchingColumns: boolean;
@@ -29,8 +30,16 @@ const ConfigContentSection: React.FC<ConfigContentSectionProps> = ({
     return <ConfigLoadingState />;
   }
   
-  if (!columns.length) {
-    return <ConfigEmptyState />;
+  // Vérification des erreurs ou des colonnes vides
+  if (!columns || columns.length === 0) {
+    return (
+      <ConfigEmptyState 
+        message={`Impossible de charger les colonnes pour la table "${selectedTable}"`}
+        submessage="Vérifiez que la table existe et que vous avez les permissions nécessaires."
+        icon={<AlertCircle className="h-8 w-8 text-amber-500" />}
+        error={`Table sélectionnée: ${selectedTable}\nColonnes trouvées: ${columns ? columns.length : 0}`}
+      />
+    );
   }
   
   return (
