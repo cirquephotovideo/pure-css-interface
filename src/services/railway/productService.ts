@@ -9,7 +9,7 @@ export async function fetchProducts(): Promise<QueryResult<Product>> {
   try {
     const query = `
       SELECT 
-        product_id as id, 
+        id, 
         reference, 
         name, 
         description, 
@@ -53,7 +53,7 @@ export async function searchProducts(searchTerm: string): Promise<QueryResult<Pr
       // Search by EAN or barcode (exact match)
       query = `
         SELECT 
-          product_id as id, 
+          id, 
           reference, 
           name, 
           description, 
@@ -77,7 +77,7 @@ export async function searchProducts(searchTerm: string): Promise<QueryResult<Pr
       // Full text search on multiple fields
       query = `
         SELECT 
-          product_id as id, 
+          id, 
           reference, 
           name, 
           description, 
