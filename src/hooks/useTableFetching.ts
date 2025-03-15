@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { toast } from "sonner";
 import { executeRailwayQuery } from "@/services/railway/queryService";
@@ -24,6 +23,12 @@ export function useTableFetching(
   const [tableColumns, setTableColumns] = useState<Record<string, string[]>>({});
   const [fetchingColumns, setFetchingColumns] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+
+  useEffect(() => {
+    if (initialConfigs.length > 0) {
+      setTableConfigs(initialConfigs);
+    }
+  }, []);
 
   const fetchTables = async () => {
     try {
@@ -84,10 +89,6 @@ export function useTableFetching(
   };
   
   const fetchColumnsForTable = async (tableName: string) => {
-    if (tableColumns[tableName]) {
-      return;
-    }
-    
     try {
       setFetchingColumns(true);
       const query = `
@@ -106,6 +107,21 @@ export function useTableFetching(
           ...prev,
           [tableName]: columns
         }));
+        
+        const tableConfig = tableConfigs.find(config => config.name === tableName);
+        if (!tableConfig) {
+          const newConfig: TableConfig = {
+            name: tableName,
+            enabled: false,
+            searchFields: [],
+            displayFields: [],
+            columnMapping: {}
+          };
+          
+          const updatedConfigs = [...tableConfigs, newConfig];
+          setTableConfigs(updatedConfigs);
+          if (onChange) onChange(updatedConfigs);
+        }
       }
     } catch (error) {
       console.error(`Error fetching columns for table ${tableName}:`, error);

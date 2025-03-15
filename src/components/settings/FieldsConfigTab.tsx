@@ -5,6 +5,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { TableConfig } from "@/types/tableConfig";
+import { toast } from "sonner";
 
 interface FieldsConfigTabProps {
   selectedTable: string;
@@ -35,6 +36,7 @@ const FieldsConfigTab: React.FC<FieldsConfigTabProps> = ({
     });
     
     onConfigChange(updatedConfigs);
+    toast.success(`Champ ${fieldName} ${type === 'searchFields' ? 'de recherche' : 'd\'affichage'} mis à jour`);
   };
   
   const selectAllFields = (type: 'searchFields' | 'displayFields') => {
@@ -46,6 +48,7 @@ const FieldsConfigTab: React.FC<FieldsConfigTabProps> = ({
     });
     
     onConfigChange(updatedConfigs);
+    toast.success(`Tous les champs ${type === 'searchFields' ? 'de recherche' : 'd\'affichage'} sélectionnés`);
   };
   
   const clearAllFields = (type: 'searchFields' | 'displayFields') => {
@@ -57,7 +60,16 @@ const FieldsConfigTab: React.FC<FieldsConfigTabProps> = ({
     });
     
     onConfigChange(updatedConfigs);
+    toast.success(`Tous les champs ${type === 'searchFields' ? 'de recherche' : 'd\'affichage'} désélectionnés`);
   };
+
+  // Ensure tableConfig has the correct structure
+  const currentSearchFields = tableConfig?.searchFields || [];
+  const currentDisplayFields = tableConfig?.displayFields || [];
+
+  // Debug logging to track state
+  console.log("Current table config:", tableConfig);
+  console.log("Display fields:", currentDisplayFields);
 
   return (
     <div className="space-y-4">
@@ -87,7 +99,7 @@ const FieldsConfigTab: React.FC<FieldsConfigTabProps> = ({
               <div key={`search-${column}`} className="flex items-center space-x-2">
                 <Checkbox 
                   id={`search-${column}`} 
-                  checked={tableConfig.searchFields.includes(column)}
+                  checked={currentSearchFields.includes(column)}
                   onCheckedChange={() => toggleField(column, 'searchFields')}
                 />
                 <label
@@ -130,7 +142,7 @@ const FieldsConfigTab: React.FC<FieldsConfigTabProps> = ({
               <div key={`display-${column}`} className="flex items-center space-x-2">
                 <Checkbox 
                   id={`display-${column}`} 
-                  checked={tableConfig.displayFields.includes(column)}
+                  checked={currentDisplayFields.includes(column)}
                   onCheckedChange={() => toggleField(column, 'displayFields')}
                 />
                 <label
