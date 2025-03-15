@@ -2,17 +2,25 @@
 import React from 'react';
 import { AlertTriangle } from 'lucide-react';
 
-const ConfigEmptyState: React.FC = () => {
+interface ConfigEmptyStateProps {
+  message?: string;
+  submessage?: string;
+}
+
+const ConfigEmptyState: React.FC<ConfigEmptyStateProps> = ({ 
+  message = "Impossible de charger les colonnes pour cette table.",
+  submessage = "Vérifiez que la table existe et que vous avez les permissions nécessaires."
+}) => {
   return (
     <div className="text-center py-6 space-y-2">
       <div className="flex justify-center">
         <AlertTriangle className="h-8 w-8 text-amber-500" />
       </div>
       <div className="opacity-70">
-        Impossible de charger les colonnes pour cette table.
+        {message}
       </div>
       <div className="text-sm text-muted-foreground">
-        Vérifiez que la table existe et que vous avez les permissions nécessaires.
+        {submessage}
       </div>
     </div>
   );

@@ -2,7 +2,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { executeRailwayQuery } from '../queryService';
 import { searchProducts } from '../productService';
-import { SearchResult } from '../productService';
 
 // Mock the queryService module
 vi.mock('../queryService', () => ({
