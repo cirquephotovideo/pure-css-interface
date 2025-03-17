@@ -1,9 +1,10 @@
+
 /**
  * Railway DB Product Service
  * Handles product-related database operations
  */
 import { toast } from "sonner";
-import { Product, QueryResult, TableConfig } from "./types";
+import { Product, QueryResult } from "./types";
 import { executeRailwayQuery } from "./queryService";
 import { LogLevel, logMessage, addToLogBuffer } from "./logger";
 
@@ -61,6 +62,15 @@ export async function fetchProducts(): Promise<QueryResult<Product>> {
   }
 }
 
+// Interface for table configuration with column mapping
+interface TableConfig {
+  name: string;
+  enabled: boolean;
+  searchFields: string[];
+  displayFields: string[];
+  columnMapping?: Record<string, string>;
+}
+
 /**
  * Search for products by term
  */
@@ -105,17 +115,17 @@ export async function searchProducts(term: string): Promise<QueryResult<Product>
     // Get a list of raw tables to search
     const tables = tablesResult.data || [];
     
-    // Filter tables by those enabled in configuration AND active
+    // Filter tables by those enabled in configuration
     const enabledTableNames = tableConfigs
-      .filter(config => config.enabled && config.isActive !== false)
+      .filter(config => config.enabled)
       .map(config => config.name);
     
-    // Use enabled and active tables from config, or fall back to the first 5 tables if none are enabled
+    // Use enabled tables from config, or fall back to the first 5 tables if none are enabled
     const selectedTables = enabledTableNames.length > 0
       ? tables.filter(table => enabledTableNames.includes(table.table_name))
       : tables.slice(0, 5);
     
-    logMessage(LogLevel.INFO, `Using ${selectedTables.length} active tables for search`, {
+    logMessage(LogLevel.INFO, `Using ${selectedTables.length} tables for search`, {
       enabledTables: enabledTableNames,
       availableTables: tables.map(t => t.table_name)
     });

@@ -9,11 +9,19 @@ import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { executeRailwayQuery } from "@/services/railway/queryService";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Loader2, Database, Search, Eye, Layers, Activity } from 'lucide-react';
+import { Loader2, Database, Search, Eye, Layers } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { TableConfig } from "@/services/railway/types";
+
+// Interface for table configuration
+interface TableConfig {
+  name: string;
+  enabled: boolean;
+  searchFields: string[];
+  displayFields: string[];
+  columnMapping?: Record<string, string>;
+}
 
 // Standard column names for product data
 const standardColumns = [
@@ -47,7 +55,6 @@ const TableSearchConfig: React.FC<TableSearchConfigProps> = ({
   const [fetchingColumns, setFetchingColumns] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [configTab, setConfigTab] = useState('fields');
-  const [showInactiveRawTables, setShowInactiveRawTables] = useState(false);
   
   const fetchTables = async () => {
     try {
@@ -77,8 +84,7 @@ const TableSearchConfig: React.FC<TableSearchConfigProps> = ({
               enabled: false,
               searchFields: [],
               displayFields: [],
-              columnMapping: {},
-              isActive: true
+              columnMapping: {}
             }))
           ];
           setTableConfigs(newConfigs);
@@ -153,20 +159,6 @@ const TableSearchConfig: React.FC<TableSearchConfigProps> = ({
     );
     setTableConfigs(updatedConfigs);
     if (onChange) onChange(updatedConfigs);
-  };
-  
-  const toggleTableActive = (tableName: string) => {
-    const updatedConfigs = tableConfigs.map(config => 
-      config.name === tableName 
-        ? { ...config, isActive: !config.isActive } 
-        : config
-    );
-    setTableConfigs(updatedConfigs);
-    if (onChange) onChange(updatedConfigs);
-    
-    toast.success(
-      `Table ${tableName} marquée comme ${updatedConfigs.find(c => c.name === tableName)?.isActive ? 'active' : 'inactive'}`
-    );
   };
   
   const toggleField = (tableName: string, fieldName: string, type: 'searchFields' | 'displayFields') => {
@@ -300,14 +292,9 @@ const TableSearchConfig: React.FC<TableSearchConfigProps> = ({
       enabled: false,
       searchFields: [],
       displayFields: [],
-      columnMapping: {},
-      isActive: true
+      columnMapping: {}
     };
   };
-  
-  const filteredTableConfigs = showInactiveRawTables 
-    ? tableConfigs 
-    : tableConfigs.filter(config => config.isActive !== false);
   
   const renderFieldsTab = () => {
     if (!selectedTable || !tableColumns[selectedTable]) return null;
@@ -476,33 +463,18 @@ const TableSearchConfig: React.FC<TableSearchConfigProps> = ({
               Sélectionnez les tables à inclure dans la recherche et configurez les champs.
             </CardDescription>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="flex items-center space-x-2">
-              <Checkbox 
-                id="showInactive" 
-                checked={showInactiveRawTables}
-                onCheckedChange={(checked) => setShowInactiveRawTables(checked === true)}
-              />
-              <label
-                htmlFor="showInactive"
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                Afficher tables inactives
-              </label>
-            </div>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={handleRefresh}
-              disabled={refreshing || loading}
-            >
-              {refreshing || loading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                "Actualiser les tables"
-              )}
-            </Button>
-          </div>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleRefresh}
+            disabled={refreshing || loading}
+          >
+            {refreshing || loading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              "Actualiser les tables"
+            )}
+          </Button>
         </CardHeader>
         
         <CardContent>
@@ -512,7 +484,7 @@ const TableSearchConfig: React.FC<TableSearchConfigProps> = ({
               <Skeleton className="h-4 w-3/4" />
               <Skeleton className="h-4 w-5/6" />
             </div>
-          ) : filteredTableConfigs.length === 0 ? (
+          ) : tableConfigs.length === 0 ? (
             <div className="text-center py-8">
               <Database className="h-12 w-12 mx-auto text-gray-500 mb-4" />
               <h3 className="text-lg font-medium">Aucune table trouvée</h3>
@@ -523,7 +495,7 @@ const TableSearchConfig: React.FC<TableSearchConfigProps> = ({
           ) : (
             <ScrollArea className="h-[400px]">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-1">
-                {filteredTableConfigs.map((config) => (
+                {tableConfigs.map((config) => (
                   <TooltipProvider key={config.name}>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -554,25 +526,11 @@ const TableSearchConfig: React.FC<TableSearchConfigProps> = ({
                               <Layers className="h-3 w-3 mr-1" />
                               {config.columnMapping ? Object.keys(config.columnMapping || {}).length : 0}
                             </span>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className={`h-5 w-5 rounded-full ${config.isActive !== false ? 'text-green-500' : 'text-gray-500'}`}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                toggleTableActive(config.name);
-                              }}
-                            >
-                              <Activity className="h-3 w-3" />
-                            </Button>
                           </div>
                         </div>
                       </TooltipTrigger>
                       <TooltipContent>
                         <p>{config.name}</p>
-                        <p className="text-xs opacity-70">
-                          {config.isActive !== false ? 'Active' : 'Inactive'}
-                        </p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
@@ -586,16 +544,7 @@ const TableSearchConfig: React.FC<TableSearchConfigProps> = ({
       {selectedTable && (
         <Card>
           <CardHeader>
-            <div className="flex justify-between items-center">
-              <CardTitle>Configuration de <span className="font-mono text-sm bg-muted p-1 rounded break-all">{selectedTable}</span></CardTitle>
-              <div className="flex items-center gap-2">
-                <span className="text-sm">Table active</span>
-                <Switch
-                  checked={getSelectedTableConfig().isActive !== false}
-                  onCheckedChange={() => toggleTableActive(selectedTable)}
-                />
-              </div>
-            </div>
+            <CardTitle>Configuration de <span className="font-mono text-sm bg-muted p-1 rounded break-all">{selectedTable}</span></CardTitle>
             <CardDescription>
               Configurez cette table pour améliorer la recherche et l'affichage.
             </CardDescription>
