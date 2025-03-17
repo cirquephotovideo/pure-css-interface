@@ -1,4 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { 
   RAILWAY_DB_HOST, 
   RAILWAY_DB_PORT, 
@@ -13,7 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Loader2 } from 'lucide-react';
+import { Loader2, RefreshCw } from 'lucide-react';
 import TableSearchConfig from '@/components/settings/TableSearchConfig';
 import { executeRailwayQuery } from "@/services/railway/queryService";
 
@@ -176,7 +178,7 @@ const Settings = () => {
           // @ts-ignore
           window.RAILWAY_DB_PASSWORD = testSettings.password;
           
-          // Use a simple query to test the connection
+          // Use a simple query to test the connection - now without params
           const query = "SELECT 1 as connection_test";
           const result = await executeRailwayQuery(query);
           
@@ -325,16 +327,26 @@ const Settings = () => {
             </CardContent>
             
             <CardFooter className="flex justify-between">
-              <Button variant="outline" onClick={testConnection} disabled={testingConnection}>
-                {testingConnection ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Test en cours...
-                  </>
-                ) : (
-                  "Tester la connexion"
-                )}
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={testConnection} disabled={testingConnection}>
+                  {testingConnection ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Test en cours...
+                    </>
+                  ) : (
+                    "Tester la connexion"
+                  )}
+                </Button>
+                
+                <Button variant="ghost" asChild>
+                  <Link to="/reset-railway-db" className="flex items-center gap-1">
+                    <RefreshCw className="h-4 w-4" />
+                    Réinitialiser
+                  </Link>
+                </Button>
+              </div>
+              
               <Button onClick={saveSettings}>
                 Enregistrer les paramètres
               </Button>

@@ -18,6 +18,7 @@ export async function handleRequest(req) {
     console.log("Request received with data:", {
       queryProvided: !!query,
       paramsProvided: !!params,
+      paramsLength: params ? params.length : 0,
       readOnly,
       dbConfigProvided: !!dbConfig,
       queryPreview: query ? query.substring(0, 100) + (query.length > 100 ? '...' : '') : null,
@@ -52,8 +53,11 @@ export async function handleRequest(req) {
 
     console.log("Connecting to Railway DB...");
     
+    // Check if params is empty and only pass it if it has elements
+    const paramsToUse = params && params.length > 0 ? params : undefined;
+    
     // Execute the query with the client handling the connection
-    const result = await executeQuery(client, query, params);
+    const result = await executeQuery(client, query, paramsToUse);
     
     if (!result.success) {
       console.error("Query execution failed:", result.error);

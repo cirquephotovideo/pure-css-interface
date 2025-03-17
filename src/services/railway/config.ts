@@ -28,6 +28,18 @@ export function parseDBConnectionString(connectionString: string | null | undefi
   }
 }
 
+// Clear any existing settings from localStorage to start fresh
+const clearExistingSettings = () => {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem('railway_db_settings');
+      console.log("Cleared existing Railway DB settings from localStorage");
+    }
+  } catch (e) {
+    console.error("Error clearing localStorage:", e);
+  }
+};
+
 // Try to get connection info from potential connection string
 const connectionString = import.meta.env.VITE_RAILWAY_DB_CONNECTION_STRING;
 const parsedConnection = parseDBConnectionString(connectionString);
@@ -100,3 +112,37 @@ console.log("Railway DB Configuration loaded:", {
   user: RAILWAY_DB_USER,
   passwordProvided: RAILWAY_DB_PASSWORD ? "Yes" : "No"
 });
+
+// Export a function to reset settings
+export function resetRailwayDBSettings() {
+  clearExistingSettings();
+  
+  if (typeof window !== 'undefined') {
+    // @ts-ignore
+    window.RAILWAY_DB_HOST = initialHost;
+    // @ts-ignore
+    window.RAILWAY_DB_PORT = initialPort;
+    // @ts-ignore
+    window.RAILWAY_DB_NAME = initialDbName;
+    // @ts-ignore
+    window.RAILWAY_DB_USER = initialUser;
+    // @ts-ignore
+    window.RAILWAY_DB_PASSWORD = initialPassword;
+    
+    // Save default settings to localStorage
+    const defaultSettings = {
+      host: initialHost,
+      port: initialPort,
+      database: initialDbName,
+      user: initialUser,
+      password: initialPassword
+    };
+    
+    localStorage.setItem('railway_db_settings', JSON.stringify(defaultSettings));
+    
+    console.log("Railway DB settings reset to defaults");
+    return defaultSettings;
+  }
+  
+  return null;
+}

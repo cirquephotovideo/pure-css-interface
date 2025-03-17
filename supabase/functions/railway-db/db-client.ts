@@ -62,7 +62,17 @@ export async function executeQuery(client, query, params) {
       }
     }
     
-    const result = await client.queryObject(query, params || []);
+    // Important: Execute the query without parameters if params is empty
+    // This fixes the "bind message supplies X parameters, but prepared statement requires 0" error
+    let result;
+    if (!params || params.length === 0) {
+      // Execute without parameters
+      result = await client.queryObject(query);
+    } else {
+      // Execute with parameters
+      result = await client.queryObject(query, params);
+    }
+    
     console.log(`Query executed successfully, returned ${result.rows.length} rows`);
     
     // Log the entire result to help with debugging

@@ -33,6 +33,9 @@ export async function sendQueryToRailwayAPI<T>(
     
     addToLogBuffer(LogLevel.INFO, `Connexion à la base de données: ${RAILWAY_DB_HOST}:${RAILWAY_DB_PORT}/${RAILWAY_DB_NAME}`);
     
+    // Only send params if they're actually needed
+    const paramsToSend = params && params.length > 0 ? params : [];
+    
     // Use the edge function Supabase to execute the PostgreSQL query
     const response = await fetch("https://hspgrehyavlqiilrajor.supabase.co/functions/v1/railway-db", {
       method: "POST",
@@ -44,7 +47,7 @@ export async function sendQueryToRailwayAPI<T>(
       },
       body: JSON.stringify({
         query,
-        params,
+        params: paramsToSend, // Only send non-empty params
         readOnly: true,
         dbConfig: {
           host: RAILWAY_DB_HOST,
