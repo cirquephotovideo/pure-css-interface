@@ -41,3 +41,13 @@ export interface QueryResult<T> {
   count: number;
   error: string | null;
 }
+
+// Table configuration interface
+export interface TableConfig {
+  name: string;
+  enabled: boolean;
+  searchFields: string[];
+  displayFields: string[];
+  columnMapping?: Record<string, string>;
+  isActive?: boolean; // New field to track if a table is active
+}
