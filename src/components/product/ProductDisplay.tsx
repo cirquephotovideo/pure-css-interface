@@ -4,7 +4,6 @@ import { cn } from '@/lib/utils';
 import { Database, Loader2 } from 'lucide-react';
 import { Product } from '@/services/railway';
 import ProductRow from './ProductRow';
-import ConsolidatedProductRow from './ConsolidatedProductRow';
 import SearchBar from '@/components/SearchBar';
 import { searchProducts, fetchProducts } from '@/services/railway/productService';
 
@@ -21,7 +20,6 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [groupBy, setGroupBy] = useState<'none' | 'barcode' | 'supplier_code'>('none');
   
   // Load initial products if none are provided
   useEffect(() => {
@@ -82,44 +80,8 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
     }
   };
 
-  // Group products by specified key
-  const groupProducts = () => {
-    if (groupBy === 'none') {
-      return products.map(product => ({
-        key: `${product.source_table}-${product.id}`,
-        items: [product],
-        groupKey: null,
-        groupType: null
-      }));
-    }
-
-    const groups: Record<string, Product[]> = {};
-    
-    products.forEach(product => {
-      const groupValue = product[groupBy as keyof Product];
-      if (groupValue && typeof groupValue === 'string') {
-        if (!groups[groupValue]) {
-          groups[groupValue] = [];
-        }
-        groups[groupValue].push(product);
-      } else {
-        // If no group value, add as individual item
-        const key = `${product.source_table}-${product.id}`;
-        groups[key] = [product];
-      }
-    });
-    
-    return Object.entries(groups).map(([key, items]) => ({
-      key,
-      items,
-      groupKey: key,
-      groupType: items.length > 1 ? groupBy : null
-    }));
-  };
-
   // Count unique source tables
   const sourceTables = new Set(products.map(product => product.source_table || 'products'));
-  const groupedProducts = groupProducts();
   
   return (
     <div className="container py-8">
@@ -137,20 +99,11 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
         ) : (
           <>
             <div className="flex justify-between items-center">
-              <div className="flex gap-4 items-center">
+              <div className="flex gap-4 text-sm">
                 <div className="ios-surface px-3 py-1 text-sm font-medium">Catalogue</div>
-                <div className="flex gap-2 items-center">
-                  <span className="text-sm">Grouper par:</span>
-                  <select 
-                    className="ios-surface px-2 py-1 text-sm rounded-md" 
-                    value={groupBy}
-                    onChange={(e) => setGroupBy(e.target.value as any)}
-                  >
-                    <option value="none">Aucun</option>
-                    <option value="barcode">Code-barres</option>
-                    <option value="supplier_code">Code fournisseur</option>
-                  </select>
-                </div>
+                <div className="opacity-70 px-3 py-1 text-sm">Stock</div>
+                <div className="opacity-70 px-3 py-1 text-sm"></div>
+                <div className="opacity-70 px-3 py-1 text-sm"></div>
               </div>
               
               <button className="ios-button text-sm">
@@ -174,17 +127,8 @@ const ProductDisplay: React.FC<ProductDisplayProps> = ({
             )}
             
             <div className="space-y-4">
-              {groupedProducts.map(group => 
-                group.groupType ? (
-                  <ConsolidatedProductRow 
-                    key={group.key}
-                    products={group.items}
-                    groupKey={group.groupKey || ""}
-                    groupType={group.groupType as 'barcode' | 'supplier_code'}
-                  />
-                ) : (
-                  <ProductRow key={group.key} product={group.items[0]} />
-                )
+              {products.map(product => 
+                <ProductRow key={`${product.source_table}-${product.id}`} product={product} />
               )}
               
               {products.length === 0 && !loading && (

@@ -20,8 +20,6 @@ export interface Product {
   eco?: {
     [key: string]: number;
   };
-  // Direct price field that might be used in some tables
-  price?: number | string;
   // Additional fields for extended search
   name?: string;
   supplier_code?: string;
